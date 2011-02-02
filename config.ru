@@ -1,2 +1,2 @@
-require 'converse'
+require './converse'
 run Sinatra::Application
