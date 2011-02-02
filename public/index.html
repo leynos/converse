@@ -1,0 +1,379 @@
+<html>
+    <head>
+        <script type="text/javascript" src="javascripts/json2-min.js"></script>
+        <script type="text/javascript" src="javascripts/underscore-min.js"></script>
+        <script type="text/javascript" src="javascripts/jquery-1.4.4.min.js"></script>
+        <script type="text/javascript" src="javascripts/raphael-min.js"></script>
+        <script type="text/javascript" src="javascripts/sprintf-min.js"></script>
+        <script type="text/javascript" src="javascripts/jquery.qtip-min.js"></script>
+        <script type="text/javascript" src="javascripts/jquery.scrollTo-min.js"></script>
+        <style>
+            body {
+                margin-top: 0px;
+                margin-bottom: 0px;
+            }
+            .selected-message {
+                background: #F0F0F0;
+            }
+            #messagepane {
+                max-width: 900px;
+                min-width: 300px;
+                margin-bottom: 8px;
+                height: 400px;
+                overflow: auto;
+            }
+            div.message-cell {
+                padding-top: 4px;
+                padding-bottom: 4px;
+                border-top: 1px solid #AAAAAA;
+                clear: both;
+                min-height: 108px;
+            }
+            div.message-cell > h3 {
+                margin: 0 0 0 0;
+                padding: 0 0 0 0;
+            }
+            img.avatar {
+                float: left;
+                margin-right: 4px;
+            }
+            div#notepad {
+                height: 300px;
+                width: 100%;
+                background: white;
+            }
+        </style>
+    </head>
+    <body>
+
+        <div id="notepad"></div>
+        <div id="messagepane"></div>
+
+        <script type="text/javascript">
+
+
+var mul=20;
+var vmul=25;
+
+function setPathAttrs(p)
+{
+    p.attr("stroke-width", mul/8);
+    p.attr("stroke", "gray");
+}
+
+Raphael.fn.dash = function(x, y)
+{
+    x1=(x-0.5)*mul;
+    y1=(y)*vmul;
+    x2=(x+0.5)*mul;
+    y2=(y)*vmul;
+    p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
+    setPathAttrs(p);
+    return p;
+}
+
+Raphael.fn.tee = function(x, y)
+{
+    s = this.set();
+    s.push(this.dash(x, y));
+    x1=(x)*mul;
+    y1=(y)*vmul;
+    x2=(x)*mul;
+    y2=(y+0.5)*vmul;
+    p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
+    setPathAttrs(p);
+    return p;
+}
+
+Raphael.fn.el = function(x, y)
+{
+    x1=(x)*mul;
+    y1=(y-0.5)*vmul;
+    x2=(x)*mul;
+    y2=(y)*vmul;
+    x3=(x+0.5)*mul;
+    y3=(y)*vmul;
+    p = this.path(sprintf("M%d %d L%d %d L%d %d", x1, y1, x2, y2, x3, y3));
+    setPathAttrs(p);
+    return p;
+}
+
+Raphael.fn.bar = function(x, y)
+{
+    x1=(x)*mul;
+    y1=(y-0.5)*vmul;
+    x2=(x)*mul;
+    y2=(y+0.5)*vmul;
+    p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
+    setPathAttrs(p);
+    return p;
+}
+
+Raphael.fn.rtee = function(x, y)
+{
+    s = this.set()
+    s.push(this.bar(x, y));
+    x1=(x)*mul;
+    y1=(y)*vmul;
+    x2=(x+0.5)*mul;
+    y2=(y)*vmul;
+    p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2))
+    setPathAttrs(p);
+    s.push(p);
+    return s;
+}
+
+var circles = {};
+
+var selection;
+
+function select(id, paper)
+{
+    var messageCell = $(".selected-message")
+    if (messageCell) {
+        messageCell.removeClass("selected-message");
+    }
+    messageCell = $("#post-"+id)
+    if (messageCell) {
+        messageCell.addClass("selected-message");
+    }
+
+
+    if (selection)
+        selection.remove();
+    var c = circles[id];
+    if (c) {
+        cx = c.attr("cx");
+        cy = c.attr("cy");
+        selection = paper.circle(cx, cy, mul*0.2);
+        selection.attr("fill", "black");
+    }
+
+    var post_off = $("#post-"+id).position().top;
+    $("#messagepane").scrollTo( "#post-"+id , 400, {axis:'y'} );
+}
+
+function drawTree(post, paper, x, y)
+{
+    var c = paper.circle(x*mul, y*vmul, mul*0.4);
+    var id = post.id;
+    var onclick = function () {
+        selected_id=id;
+        var options = {
+            url: "post/"+selected_id+"/message",
+            success: modelCallback
+        };
+        // $.ajax(options);
+        select(id, paper);
+        
+    };
+    circles[id] = c;
+    c.attr("fill", "white");
+    c.node.onclick = onclick;
+    $(c.node).qtip({
+        content: 'id: '+post.id+'<br />author: '+users[post.author].name+'<br />date: '+post.date,
+        show: 'mouseover',
+        hide: 'mouseout',
+        position: {
+            target: 'mouse', 
+            corner: {
+                target: 'rightBottom',
+                tooltip: 'leftTop'
+            }
+        }
+    });
+    
+    var i=0;
+    var count=1;
+    _(post.children).each(function (child) {
+        var last = (count==post.children.length);
+        if (last && count==1) {
+            paper.dash(x+1, y+i);
+        } else if (count==1) {
+            paper.tee(x+1, y+i);
+        } else if (last) {
+            paper.el(x+1, y+i);
+        } else {
+            paper.rtee(x+1, y+i);
+        }
+        dy = drawTree(postsHash[child], paper, x+2, y+i);
+        if (dy > 1 && !last) {
+            for (j=1; j<dy; j++) {
+                paper.bar(x+1, y+i+j);
+            }
+        }
+        i += dy;
+        count += 1;
+    });
+    return (i==0) ? 1 : i;
+}
+
+var postsHash = {};
+var orderedPosts = [];
+var users = {};
+
+function addPost(post)
+{
+    postsHash[post.id] = post;
+    var ind = _(orderedPosts).chain()
+        .pluck(orderedPosts, "date") 
+        .sortedIndex(post.date);
+    orderedPosts.splice(ind, 0, post);
+
+    var div = $('<div>', {
+        id: "post-"+post.id,
+        class: "message-cell"
+    });
+    div.html(post.body);
+    var author_id = post.author;
+    var author = users[author_id];
+    if (author) {
+        div.prepend('<h3>'+author.name+'</h3>');
+        if (author.avatar) {
+            div.prepend('<img src="avatar/'+author_id+'/'+author.avatar+'" class="avatar" />');
+        }
+    }
+
+    // Insert into message pane to reflect array
+    var prnt = $("#messagepane");
+    if (prnt) {
+        var children = prnt.children();
+        if (children.length > ind) {
+            children[ind].before(div);
+        } else {
+            prnt.append(div);
+        }
+    }
+}
+
+var selected_id = 4;
+var paper = Raphael("notepad", 400, 300);
+
+function par(id) {
+    return postsHash[id].prnt;
+}
+
+function firstChild(id) {
+    return _(postsHash[id].children).first();
+}
+
+function nextCousin(id)
+{
+    var prnt = id;
+    var depth = 0;
+    var cand = null;
+    while (!cand) {
+        var old_prnt = prnt;
+        prnt = par(old_prnt);
+        if (!prnt)
+            return null; // we've hit the root and still not found a cousin
+        depth++;
+        cand = prnt;
+        var j = 0;
+        while (j < depth) {
+            var children = postsHash[cand].children;
+            var i= _(children).indexOf(old_prnt);
+            cand = children[i+1];
+            if (!cand)
+                break; // reached a leaf before finding a cousin
+            j++;
+        }
+    }
+    return cand;
+}
+
+function prevCousin(id)
+{
+    var prnt = id;
+    var depth = 0;
+    var cand = null;
+    while (!cand) {
+        var old_prnt = prnt;
+        prnt = par(old_prnt);
+        if (!prnt)
+            return null; // we've hit the root and still not found a cousin
+        depth++;
+        cand = prnt;
+        var j = 0;
+        while (j < depth) {
+            var children = postsHash[cand].children;
+            var i= _(children).indexOf(old_prnt);
+            cand = i<0?children[children.length-1]:children[i-1];
+            if (!cand)
+                break; // reached a leaf before finding a cousin
+            j++;
+        }
+    }
+    return cand;
+}
+
+$(document).keydown(function (event) {
+    var inkey = String.fromCharCode(event.keyCode).toLowerCase();
+    switch(inkey) {
+        case "a":
+            var id=par(selected_id);
+            if (id) {
+                selected_id=id;
+                select(selected_id, paper);
+            }
+            break;
+        case "d":
+            var id=firstChild(selected_id);
+            if (id) {
+                selected_id=id;
+                select(selected_id, paper);
+            }
+            break;
+        case "w":
+            var id=prevCousin(selected_id);
+            if (id) {
+                selected_id=id;
+                select(selected_id, paper);
+            }
+            break;
+        case "s":
+            var id=nextCousin(selected_id);
+            if (id) {
+                selected_id=id;
+                select(selected_id, paper);
+            }
+            break;
+    }
+});
+
+var modelCallback = function (data, textStatus, response) {
+    if (data.users) {
+        $.extend(users, data.users);
+    }
+    if (data.posts) {
+        _(data.posts).each(function(post) {
+            addPost(post);
+        });
+        drawTree(postsHash[selected_id], paper, 1, 1);
+        select(selected_id, paper);
+    } else {
+        $("#messagepane").html("No post found! :o");
+    }
+};
+
+$(document).ready( function() {
+    $("#messagepane").height( $(window).height() - $("#notepad").outerHeight() -8 );
+
+    $(window).resize( function() {
+        $("#messagepane").height( $(window).height() - $("#notepad").outerHeight() -8 );
+    });
+
+    var options = {
+        url: "post/"+selected_id,
+        success: modelCallback
+    };
+    $.ajax(options);
+});
+
+
+    
+
+        </script>
+
+    </body>
+</html>
