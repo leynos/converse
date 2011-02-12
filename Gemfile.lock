@@ -18,6 +18,7 @@ GEM
     hoe (1.12.2)
       rake (>= 0.8.4)
       rubyforge (>= 1.0.3)
+    i18n (0.5.0)
     json (1.5.1)
     json_pure (1.5.1)
     mime-types (1.16)
@@ -41,4 +42,5 @@ DEPENDENCIES
   couchrest_extended_document
   erector
   hoe (< 2.0.0)
+  i18n
   sinatra
