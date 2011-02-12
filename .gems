@@ -1,4 +1,4 @@
 sinatra
 couchrest
-bcrypt
+bcrypt-ruby
 erector
