@@ -1,1 +1,4 @@
 sinatra
+couchrest
+bcrypt
+erector

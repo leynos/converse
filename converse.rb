@@ -1,6 +1,8 @@
 require 'rubygems'
+require 'logger'
 require 'sinatra'
 require 'json'
+require 'erector'
 
 class PostController
 
@@ -109,6 +111,7 @@ class PostController
 end
 
 controller = PostController.new()
+logger = Logger.new(STDERR)
 
 # set :public, File.dirname(__FILE__) + '/static'
 enable :sessions
@@ -126,3 +129,57 @@ get '/' do
   File.read(File.join('public', 'index.html'))
 end
 
+# require 'bcrypt'
+require 'couchrest_extended_document'
+require './user'
+
+SERVER = CouchRest.new
+SERVER.default_database = 'converse'
+CouchRest::Document::use_database SERVER.default_database
+
+get '/user/:username' do
+    username=params[:username]
+    result = User.by_username(:key => username)
+    if result.length==0 then
+        [404, 'No user by that name here']
+    else
+        user = result[0];
+        {
+            :username => user.username,
+            :displayname => user.displayname,
+        }.to_json
+    end
+end
+        
+put '/user/:username' do # yes yes I know
+    content_type :json
+    username=params[:username]
+    result = User.by_username(:key => username)
+    if result.length==0 then
+        user = User.new
+        user.username = username
+        user.create!
+        201
+    else
+        [409, ['username'].to_json]
+    end
+end
+
+class Toolbar < Erector::Widget
+    def content
+        div :class => 'toolbar-button', :id => 'logout' do
+            img :src => 'images/logout.png'
+            br
+            span 'Log Out', :class => 'caption'
+        end
+        div :class => 'toolbar-button', :id => 'adduser' do
+            img :src => 'images/adduser.png'
+            br
+            span 'Add User', :class => 'caption'
+        end
+    end
+end
+
+get '/toolbar' do
+    Toolbar.new.to_html
+end

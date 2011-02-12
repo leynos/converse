@@ -1,12 +1,17 @@
 <html>
     <head>
-        <script type="text/javascript" src="javascripts/json2-min.js"></script>
-        <script type="text/javascript" src="javascripts/underscore-min.js"></script>
-        <script type="text/javascript" src="javascripts/jquery-1.4.4.min.js"></script>
-        <script type="text/javascript" src="javascripts/raphael-min.js"></script>
-        <script type="text/javascript" src="javascripts/sprintf-min.js"></script>
-        <script type="text/javascript" src="javascripts/jquery.qtip-min.js"></script>
-        <script type="text/javascript" src="javascripts/jquery.scrollTo-min.js"></script>
+        <script type="text/javascript" src="js/json2-min.js"></script>
+        <script type="text/javascript" src="js/underscore-min.js"></script>
+        <script type="text/javascript" src="js/jquery-1.4.4.min.js"></script>
+        <script type="text/javascript" src="js/raphael-min.js"></script>
+        <script type="text/javascript" src="js/sprintf-min.js"></script>
+        <script type="text/javascript" src="js/jquery.qtip-min.js"></script>
+        <script type="text/javascript" src="js/jquery.scrollTo-min.js"></script>
+        <script type="text/javascript" src="js/jquery-ui-1.8.9.custom.min.js"></script>
+        <script type="text/javascript" src="js/jquery-window/jquery.window.min.js"></script>
+        <script type="text/javascript" src="js/shortcut.js"></script>
+        <link rel="shortcut icon" type="image/png" href="/favicon.png" />
+        <link rel="stylesheet" type="text/css" href="css/smoothness/jquery-ui-1.8.9.custom.css" />
         <style>
             body {
                 margin-top: 0px;
@@ -41,13 +46,61 @@
                 height: 300px;
                 width: 100%;
                 background: white;
+                overflow: hidden;
             }
+            div#toolbar {
+                display: inline-block;
+                position: fixed;
+                top: 15px;
+                right: 30px;
+            }
+            .caption {
+                font-size: 8;
+            }
+            .toolbar-button {
+                text-align: center;
+                display: inline-block;
+            }
+            #user-dialog {
+                max-width: 600px;
+            }
+            #notepad > div.ui-resizable-s {
+        /*
+                background-image: -webkit-gradient(
+                    linear,
+                    left bottom,
+                    left top,
+                    color-stop(0.00, rgb(245,245,245)),
+                    color-stop(0.4,  rgb(173,173,173)),
+                    color-stop(1,    rgb(237,237,237))
+                );
+                background-image: -moz-linear-gradient(
+                    center bottom,
+                    rgb(245,245,245) 0%,
+                    rgb(173,173,173) 40%,
+                    rgb(237,237,237) 100%
+                );
+    */
+                background-color: #DDD;
+                height: 10px;
+                background-image:url('images/resizev.png');
+                background-repeat: no-repeat;
+                background-position: center top;
+            z-index:1000;
+            }
+            #notepad > div.ui-resizable-s > div.knurl {
+                background-image:url('images/resizev.png');
+                background-repeat: no-repeat;
+                background-position: center top;
+                height: 100%;
+                width: 100%;
         </style>
     </head>
     <body>
 
         <div id="notepad"></div>
         <div id="messagepane"></div>
+        <div id="toolbar"></div>
 
         <script type="text/javascript">
 
@@ -307,40 +360,6 @@ function prevCousin(id)
     return cand;
 }
 
-$(document).keydown(function (event) {
-    var inkey = String.fromCharCode(event.keyCode).toLowerCase();
-    switch(inkey) {
-        case "a":
-            var id=par(selected_id);
-            if (id) {
-                selected_id=id;
-                select(selected_id, paper);
-            }
-            break;
-        case "d":
-            var id=firstChild(selected_id);
-            if (id) {
-                selected_id=id;
-                select(selected_id, paper);
-            }
-            break;
-        case "w":
-            var id=prevCousin(selected_id);
-            if (id) {
-                selected_id=id;
-                select(selected_id, paper);
-            }
-            break;
-        case "s":
-            var id=nextCousin(selected_id);
-            if (id) {
-                selected_id=id;
-                select(selected_id, paper);
-            }
-            break;
-    }
-});
-
 var modelCallback = function (data, textStatus, response) {
     if (data.users) {
         $.extend(users, data.users);
@@ -356,18 +375,117 @@ var modelCallback = function (data, textStatus, response) {
     }
 };
 
+function handleResize()
+{
+    $("#messagepane").height( $(window).height() - $("#notepad").outerHeight() -8 );
+    $("#notepad").width( $(window).width() - 16 );
+}
+
+function showAddUser()
+{
+    if ($('#user-dialog').length != 0 ) {
+        return false;
+    }
+    $('<div id="user-dialog">').load("user.html").dialog( {
+        resizable: false, 
+        width: 350, 
+        title: 'Create User',
+        close: function() { $( this ).remove(); },
+        buttons: {
+            "Create": function() {
+                $.ajax( {
+                    url: 'user/'+encodeURIComponent($('#username-field').val()), 
+                    type: 'GET'
+                } );
+                $( this ).remove();
+            },
+            "Cancel": function() {
+                $( this ).remove();
+            }
+        }
+    } );
+}
+
+function showConfirmLogout()
+{
+    $('<div id="logout-dialog">Are you sure you wish to log out?</div>').dialog( {
+        resizable: false, 
+        modal: true,
+        title: 'Log Out',
+        buttons: {
+            "Yes": function() {
+                $( this ).remove();
+            },
+            "No": function() {
+                $( this ).remove();
+            }
+        }
+    });
+}
+
 $(document).ready( function() {
     $("#messagepane").height( $(window).height() - $("#notepad").outerHeight() -8 );
 
     $(window).resize( function() {
-        $("#messagepane").height( $(window).height() - $("#notepad").outerHeight() -8 );
+        handleResize();
     });
 
     var options = {
         url: "post/"+selected_id,
         success: modelCallback
     };
+    $('#notepad').resizable({
+        containment: 'document',
+        handles: 's'
+    });
+    $('#notepad').bind( "resize", function(event, ui) {
+        handleResize();
+    });
+    // $('#notepad div.ui-resizable-s').append( '<div class="knurl" />');
+    $('#toolbar').load('toolbar', function() {
+        $('#adduser').click( function() {
+            showAddUser();
+        });
+        $('#logout').click( function() {
+            showConfirmLogout();
+        });
+
+    });
+    shortcut.add('a', function() {
+        var id=par(selected_id);
+        if (id) {
+            selected_id=id;
+            select(selected_id, paper);
+        }
+    }, { 'disable_in_input': true });
+
+    shortcut.add('d', function() {
+        var id=firstChild(selected_id);
+        if (id) {
+            selected_id=id;
+            select(selected_id, paper);
+        }
+    }, { 'disable_in_input': true });
+
+    shortcut.add('w', function() {
+        var id=prevCousin(selected_id);
+        if (id) {
+            selected_id=id;
+            select(selected_id, paper);
+        }
+    }, { 'disable_in_input': true });
+
+    shortcut.add('s', function() {
+        var id=nextCousin(selected_id);
+        if (id) {
+            selected_id=id;
+            select(selected_id, paper);
+        }
+    }, { 'disable_in_input': true });
+
     $.ajax(options);
+
+
 });
 
 
