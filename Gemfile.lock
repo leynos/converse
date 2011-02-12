@@ -1,11 +1,18 @@
 GEM
   remote: http://rubygems.org/
   specs:
+    activesupport (3.0.3)
     bcrypt-ruby (2.1.4)
+    builder (2.1.2)
     couchrest (1.0.1)
       json (>= 1.4.6)
       mime-types (>= 1.15)
       rest-client (>= 1.5.1)
+    couchrest_extended_document (1.0.0)
+      activesupport (>= 2.3.0)
+      builder (>= 2.1.2)
+      couchrest (>= 1.0.0)
+      mime-types (>= 1.15)
     erector (0.8.1)
       hoe (>= 1.5.0)
     hoe (1.12.2)
@@ -31,6 +38,7 @@ PLATFORMS
 DEPENDENCIES
   bcrypt-ruby
   couchrest
+  couchrest_extended_document
   erector
   hoe (< 2.0.0)
   sinatra
