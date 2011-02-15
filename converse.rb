@@ -139,7 +139,7 @@ else
     'http://127.0.0.1:5984/converse' 
 end
 
-DB = CouchRest.database(db_url)
+DB = CouchRest.database!(db_url)
 CouchRest::Document::use_database DB
 
 get '/user/:username' do
