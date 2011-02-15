@@ -133,9 +133,14 @@ end
 require 'couchrest_extended_document'
 require './user'
 
-SERVER = CouchRest.new
-SERVER.default_database = 'converse'
-CouchRest::Document::use_database SERVER.default_database
+db_url = if ENV['CLOUDANT_URL'] then 
+    ENV['CLOUDANT_URL'] 
+else 
+    'http://127.0.0.1:5984/converse' 
+end
+
+DB = CouchRest.database(db_url)
+CouchRest::Document::use_database DB
 
 get '/user/:username' do
     username=params[:username]
