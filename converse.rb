@@ -134,7 +134,7 @@ require 'couchrest_extended_document'
 require './user'
 
 db_url = if ENV['CLOUDANT_URL'] then 
-    ENV['CLOUDANT_URL'] 
+    "#{ENV['CLOUDANT_URL']}/converse"
 else 
     'http://127.0.0.1:5984/converse' 
 end
