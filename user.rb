@@ -1,4 +1,6 @@
 require 'couchrest_extended_document'
+require 'bcrypt'
+require 'logger'
 
 class User < CouchRest::ExtendedDocument
 
@@ -10,8 +12,24 @@ class User < CouchRest::ExtendedDocument
 
     view_by  :username
 
-    def login(username, password)
-        # bPass = Password.new(self.password);
+    unique_id :idString
+
+    def idString
+        return "user_"+self.username
+    end
+
+    def checkPassword?(password)
+        logger = Logger.new(STDERR)
+        if not self.password then
+            logger.warn "No hash available for user #{self.username}"
+            return false
+        end
+        bPass = BCrypt::Password.new(self.password)
+        return bPass == password
+    end
+
+    def createPassword(password)
+        self.password=BCrypt::Password.create(password)
     end
 
 end

@@ -1,0 +1,89 @@
+body {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+.selected-message {
+    background: #F0F0F0;
+}
+#messagepane {
+    max-width: 900px;
+    min-width: 300px;
+    margin-bottom: 8px;
+    height: 400px;
+    overflow: auto;
+}
+div.message-cell {
+    padding-top: 4px;
+    padding-bottom: 24px;
+    border-top: 1px solid #AAAAAA;
+    clear: both;
+    min-height: 108px;
+    position: relative;
+}
+div.message-cell > h3 {
+    margin: 0 0 0 0;
+    padding: 0 0 0 0;
+}
+div.message-toolbar {
+    position: absolute;
+    bottom: -6px;
+    right: 2px;
+}
+img.avatar {
+    float: left;
+    margin-right: 4px;
+}
+div#notepad {
+    height: 300px;
+    width: 100%;
+    background: white;
+    overflow: hidden;
+}
+div#toolbar {
+    display: inline-block;
+    position: fixed;
+    top: 15px;
+    right: 30px;
+}
+.caption {
+    font-size: 8;
+}
+.toolbar-button {
+    text-align: center;
+    display: inline-block;
+}
+#user-dialog {
+    max-width: 600px;
+}
+#notepad > div.ui-resizable-s {
+    background-color: #DDD;
+    height: 10px;
+    background-image: url('images/resizev.png') 
+        -moz-linear-gradient(
+            center bottom,
+            rgb(245,245,245) 0%,
+            rgb(173,173,173) 40%,
+            rgb(237,237,237) 100%
+        );
+    background-repeat: no-repeat;
+    background-position: center top;
+    z-index:1000;
+}
+
+#notepad > div.ui-resizable-s > div.knurl {
+    background-image:url('images/resizev.png');
+    background-repeat: no-repeat;
+    background-position: center top;
+    height: 100%;
+    width: 100%;
+}
+
+div.error {
+    font-size: -2;
+    background-color: #FFFFF2;
+    color: #DC143C;
+    border: 1px solid #DC143C;
+    padding: 2px;
+    margin: 2px;
+}
+
