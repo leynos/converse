@@ -1,12 +1,12 @@
 require 'couchrest_extended_document'
 require 'bcrypt'
+require 'cgi'
 require 'logger'
 
 class User < CouchRest::ExtendedDocument
 
     property :username
     property :password
-    property :displayname
     property :role
     property :rights
 
@@ -20,7 +20,7 @@ class User < CouchRest::ExtendedDocument
 
     def checkPassword?(password)
         logger = Logger.new(STDERR)
-        if not self.password then
+        if self.password.nil? then
             logger.warn "No hash available for user #{self.username}"
             return false
         end
@@ -30,6 +30,11 @@ class User < CouchRest::ExtendedDocument
 
     def createPassword(password)
         self.password=BCrypt::Password.create(password)
+    end
+
+    def displayname
+        # Ruby 1.9: self.username.encode :xml => :text 
+        CGI.escapeHTML(self.username)
     end
 
 end

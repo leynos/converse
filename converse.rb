@@ -32,16 +32,6 @@ get '/loggedin' do
     }.to_json
 end
 
-get '/post/:id' do
-    content_type :json
-    post_id = params[:id]
-
-    {
-        :posts => controller.postsForId(post_id),
-        :users => controller.usersForId(post_id)
-    }.to_json
-end
-
 get '/' do
   File.read(File.join('public', 'index.html'))
 end
@@ -49,13 +39,13 @@ end
 get '/user/:username' do
     username=params[:username]
     result = User.by_username(:key => username)
-    if result.length==0 then
+    if result.empty? then
         [404, 'No user by that name here']
     else
         user = result[0];
         {
             :username => user.username,
-            :displayname => user.displayname,
+            :displayname => user.displayname
         }.to_json
     end
 end
@@ -65,7 +55,7 @@ put '/user/:username' do
     username=params[:username]
     password=params[:password]
     result = User.by_username(:key => username)
-    if result.length==0 then
+    if result.empty? then
         user = User.new
         user.username = username
         user.createPassword password
@@ -77,26 +67,32 @@ put '/user/:username' do
     end
 end
 
-post '/post/:id/reply' do 
+post '/post/:post_id/reply' do 
 
     unless session[:loggedin] then
         break [403, 'You are not logged in']
     end
 
-    parent = Post.find(id)
+    post_id = params[:post_id]
+    result = Post.all :key => post_id
 
-    unless parent.nil? then
+    logger.info result.to_json
+
+    if result.empty? then
         break [404, 'The post to which you are replying does not exists']
     end
 
-    post = post.new(
+    parent = result[0]
+    post = Post.new(
         :subject => params[:subject], 
         :body => params[:body], 
-        :author => session[:username])
+        :author => session[:username],
+        :date => Time.now
+    )
     post.setParent(parent)
     post.create!
     
-    201
+    200
 end
 
 post '/post' do 
@@ -105,19 +101,45 @@ post '/post' do
         break [403, 'You are not logged in']
     end
 
-    post = post.new(
+    post = Post.new(
         :subject => params[:subject], 
         :body => params[:body], 
-        :author => session[:username])
+        :author => session[:username],
+        :date => Time.now)
     post.create!
     
-    201
+    200
 end
 
-get '/post/:postid/authors' do
+get '/post/:post_id' do
+    content_type :json
+    post_id = params[:post_id]
+
+    {
+        :posts => controller.postsForId(post_id),
+        :users => controller.usersForId(post_id)
+    }.to_json
+end
+
+delete '/post/:post_id' do
+    if params[:recursive] == "yes" or params[:recursive] == "true" then
+        result = Post.by_ancestor :startkey => [post_id], :endkey => [post_id, {}]
+    else
+        result = Post.all :key => :post_id
+    end
+    if result.empty? then
+        break [404, "The post you wish to delete no longer exists"]
+    end
+    result.each do |post|
+        post.destroy
+    end
+    200
+end
+
+get '/post/:post_id/authors' do
     #content_type :json
-    postid=params[:postid]
-    Post.by_author(:key => postid, :reduce => true)
+    post_id=params[:post_id]
+    Post.by_author(:key => post_id, :reduce => true)
     200
 end
 
@@ -148,7 +170,7 @@ class Toolbar < Erector::Widget
         div :class => 'toolbar-button', :id => 'adduser' do
             img :src => 'images/adduser.png'
             br
-            span 'Add User', :class => 'caption'
+            span 'Create User', :class => 'caption'
         end
     end
 end
@@ -163,7 +185,7 @@ post '/login' do
     rememberme=params[:rememberme]
 
     result = User.by_username(:key => username)
-    if result.length == 0 then
+    if result.empty? then
         break 403
     end
 

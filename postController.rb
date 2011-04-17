@@ -36,31 +36,44 @@ class PostController
 
         tmpHash = {}
         result.each do |post|
+
             post_id=post.id
+
+            # Store the post hash currently in the temp hash
             tmpPost=tmpHash[post_id]
+
+            # Record the values from the current post from the db
             tmpHash[post_id] = {
                 :id => post_id,
-                :date => post[:date],
-                :author => post[:author],
-                :body => post[:body], # tune database query to exclude body where not yet needed
-                :prnt => post[:path].last
+                :date => post.date,
+                :author => post.author,
+                :body => post.body,
+                :prnt => post.path.last
             }
+
+            # If tmpPost existed, then use its child list else create a new child list
             if tmpPost then
                 tmpHash[post_id][:children] = tmpPost[:children]
             else
                 tmpHash[post_id][:children] = []
             end
-            if post[:path].length > 0 then
+
+            # If the post is a reply
+            unless post[:path].empty? then
                 parent_id = post[:path].last
-                if !(tmpHash[parent_id]) then
+
+                # If necessary, create a dummy parent in the temp hash
+                unless tmpHash.member? parent_id then
                     tmpHash[parent_id] = {
                         :children => []
                     }
                 end
             
-                tmpHash[parent_id][:children].push(post_id)
+                tmpHash[parent_id][:children] << post_id
             end
         end
+
+        # Return a list of posts sorted by date
         return tmpHash.values.sort do |a, b|
             a[:date] <=> b[:date]
         end

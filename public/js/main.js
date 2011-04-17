@@ -156,9 +156,19 @@ function drawTree(post, paper, x, y)
     return (i==0) ? 1 : i;
 }
 
+// Replace quotes with an appropriate escape sequence to allow 
+// placing text in a js event
+function escapeQuotes(value)
+{
+    if(!value) return "";
+    return value.replace(/\\/g, '\\\\')
+        .replace(/'/g, '\\\'').replace(/"/g, '\\\"');
+}
+
 var postsHash = {};
 var orderedPosts = [];
 var users = {};
+var parser = new BBCodeParser();
 
 function addPost(post)
 {
@@ -177,18 +187,19 @@ function addPost(post)
         id: "post-"+post.id,
         class: "message-cell"
     });
-    div.html(post.body);
+    div.html(parser.format(post.body));
     var author_id = post.author;
     var author = users[author_id];
     if (author) {
         div.prepend('<h3>'+author.displayname+'</h3>');
         if (author.avatar) {
-            div.prepend('<img src="avatar/'+author_id+'/'+author.avatar+'" class="avatar" />');
+            div.prepend('<img src="avatar/'+encodeURIComponent(author_id)+'/'+author.avatar+'" class="avatar" />');
         } else {
             div.prepend('<img src="images/no_avatar.png" class="avatar" />');
         }
     }
-    div.append('<div class="message-toolbar"><img src="images/reply_s.png" class="message-control reply-button" onclick="converse.showReply(\''+post.id+'\');" /></div>');
+    div.append('<div class="message-toolbar">'+
+        '<img src="images/reply_s.png" class="message-control reply-button" onclick="converse.showReply(\''+post.id+'\');" /></div>');
    
 
     // Insert into message pane to reflect array
@@ -313,7 +324,7 @@ function loadPost(post_id)
         }
     };
     var options = {
-        url: "post/"+post_id,
+        url: "post/"+encodeURIComponent(post_id),
         success: modelCallback
     };
     $.ajax(options);
@@ -375,7 +386,7 @@ function showReply(postId)
             "Reply": function() {
                 $('#user-form-error').remove();
                 $.ajax( {
-                    url: 'post/'+postId+'/reply',
+                    url: 'post/'+encodeURIComponent(postId)+'/reply',
                     data: { 
                         password: $('#reply-body-field').val() 
                     },

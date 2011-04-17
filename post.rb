@@ -3,7 +3,7 @@ require 'couchrest_extended_document'
 class Post < CouchRest::ExtendedDocument
 
     property :subject,  String
-    property :date,     Date
+    property :date,     Time
     property :author
     property :path,     [String]
     property :body
@@ -42,7 +42,7 @@ class Post < CouchRest::ExtendedDocument
 
     def setParent(parent)
         # Inherit the parent's path
-        path = parent.path + [parent.id]
+        self.path = parent.path + [parent.id]
     end
 
 end

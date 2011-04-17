@@ -26,7 +26,7 @@ div.message-cell > h3 {
 }
 div.message-toolbar {
     position: absolute;
-    bottom: -6px;
+    bottom: 2px;
     right: 2px;
 }
 img.avatar {
