@@ -9,6 +9,24 @@ class Post < CouchRest::ExtendedDocument
     property :body
 
     view_by  :author, :date
+
+    # simple list of threads.  We'll improve on this later
+    view_by  :thread,
+        :map => "function(doc) {
+            if (doc['couchrest-type'] == 'Post') 
+            {
+                if (doc.path.length == 0)
+                {
+                    emit(doc._id, {
+                        id: doc._id, 
+                        subject: doc.subject, 
+                        author: doc.author, 
+                        date: doc.date
+                    });
+                }
+            }
+        }"
+
     view_by  :first_ancestor,
         :map => "function(doc) {
             if (doc['couchrest-type'] == 'Post') {
@@ -23,8 +41,11 @@ class Post < CouchRest::ExtendedDocument
         :reduce => "function(key, values, rereduce) {
             var result = [];
             values.forEach(function (val) {
-                if (result.indexOf(val) < 0) 
-                    result.push(val);
+                var ival = val;
+                if (val.constructor == Array)
+                    ival=val[0];
+                if (result.indexOf(ival) < 0) 
+                    result.push(ival);
             });
             return result;
         }"

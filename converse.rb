@@ -67,6 +67,12 @@ put '/user/:username' do
     end
 end
 
+get '/threads' do
+    content_type :json
+    result = Post.by_thread
+    result.to_json
+end
+
 post '/post/:post_id/reply' do 
 
     unless session[:loggedin] then

@@ -356,8 +356,8 @@ function replyCallback(req)
     if (req.status == 200) {
         $( '#reply-dialog' ).remove();
     } else if (req.status == 403) {
-        $('#reply-replyname-field')
-            .after('<div class="error" id="reply-form-error">You are not permitted to reply here</div>');
+        $('#reply-form')
+            .before('<div class="error" id="reply-form-error">You are not permitted to reply here</div>');
     } else if (req.status == 404) {
         $('#reply-form')
             .before('<div class="error" id="reply-form-error">The post your are replying to no longer exists</div>');
@@ -372,11 +372,13 @@ function showReply(postId)
     if ($('#reply-dialog').length != 0 ) {
         return false;
     }
+    var editor;
     $('<div id="reply-dialog">').load("reply.html", function () {
-        $('#reply-body-field').cleditor({width: "100%", height: "80%", 
+        editor = $('#reply-body-field').cleditor({
+            width: "100%", height: "80%", 
             controls: "bold italic underline strikethrough | " +
                 "| bullets numbering " + "| undo redo | " +
-                "rule image link unlink | source",});
+                "rule image link unlink | source",})[0];
     }).dialog( {
         resizable: true, 
         width: 640, 
@@ -384,11 +386,12 @@ function showReply(postId)
         close: function() { $( this ).remove(); },
         buttons: {
             "Reply": function() {
-                $('#user-form-error').remove();
+                editor.updateTextArea();
+                $('#reply-dialog div.error').remove();
                 $.ajax( {
                     url: 'post/'+encodeURIComponent(postId)+'/reply',
                     data: { 
-                        password: $('#reply-body-field').val() 
+                        body: $('#reply-body-field').val() 
                     },
                     type: 'POST',
                     complete: replyCallback,
