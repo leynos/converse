@@ -1,6 +1,8 @@
 
 (function (window, document, undefined) {
 
+var root_id = "38bd0a3ccf69621c9695281050000ab2";
+
 var mul=20;
 var vmul=25;
 
@@ -172,6 +174,10 @@ var parser = new BBCodeParser();
 
 function addPost(post)
 {
+    if (null != postsHash[post.id]) {
+        return;
+    }
+
     postsHash[post.id] = post;
 
     // Determine where the post should be inserted
@@ -317,6 +323,7 @@ function loadPost(post_id)
             _(data.posts).each(function(post) {
                 addPost(post);
             });
+            paper.clear();
             drawTree(postsHash[post_id], paper, 1, 1);
             select(post_id, paper);
         } else {
@@ -355,6 +362,7 @@ function replyCallback(req)
 {
     if (req.status == 200) {
         $( '#reply-dialog' ).remove();
+        loadPost(root_id);
     } else if (req.status == 403) {
         $('#reply-form')
             .before('<div class="error" id="reply-form-error">You are not permitted to reply here</div>');
@@ -554,7 +562,7 @@ $(document).ready( function() {
 
     $.get('loggedin', function(data) {
         loggedin=data.loggedin;
-        loadPost("38bd0a3ccf69621c9695281050000ab2");
+        loadPost(root_id);
     });
 });
 

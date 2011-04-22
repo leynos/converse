@@ -40,12 +40,20 @@ class Post < CouchRest::ExtendedDocument
         # Returns all authors for a given root
         :reduce => "function(key, values, rereduce) {
             var result = [];
+            var ival;
+            function cond_push(arr, elem) {
+                if (arr.indexOf(elem) < 0) 
+                    arr.push(elem);
+            }
+                
             values.forEach(function (val) {
-                var ival = val;
-                if (val.constructor == Array)
-                    ival=val[0];
-                if (result.indexOf(ival) < 0) 
-                    result.push(ival);
+                if (rereduce) {
+                    val.forEach(function (ival) {
+                        cond_push(result, ival);
+                    });
+                } else {
+                    cond_push(result, val);
+                }
             });
             return result;
         }"
