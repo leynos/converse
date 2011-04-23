@@ -222,7 +222,10 @@ function ThreadUI() {
         div.dblclick(function(e) {
             select(post.id, paper);
         });
-        div.html(parser.format(post.body));
+        if (null != div.body)
+        {
+            div.html(parser.format(post.body));
+        }
         var author_id = post.author;
         var author = users[author_id];
         if (author) {
