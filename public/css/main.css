@@ -29,6 +29,9 @@ div.message-toolbar {
     bottom: 2px;
     right: 2px;
 }
+.message-control {
+    margin-left: 4px;
+}
 img.avatar {
     float: left;
     margin-right: 4px;

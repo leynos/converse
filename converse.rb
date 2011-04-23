@@ -2,7 +2,6 @@ require 'rubygems'
 require 'logger'
 require 'sinatra'
 require 'json'
-require 'erector'
 
 require './user'
 require './post'
@@ -24,13 +23,6 @@ controller = PostController.new()
 logger = Logger.new(STDERR)
 
 enable :sessions
-
-get '/loggedin' do
-    content_type :json
-    {
-        :loggedin => session[:loggedin]
-    }.to_json
-end
 
 get '/' do
   File.read(File.join('public', 'index.html'))
@@ -149,40 +141,34 @@ get '/post/:post_id/authors' do
     200
 end
 
-class Toolbar < Erector::Widget
-
-    def initialize(loggedin, username)
-        @loggedin=loggedin
-        @username=username
-    end
-
-    def content
-        if @loggedin then
-            div :class => 'toolbar-button' do
-                span @username, :class => 'caption'
-            end
-            div :class => 'toolbar-button', :id => 'logout' do
-                img :src => 'images/logout.png'
-                br
-                span 'Log Out', :class => 'caption'
-            end
-        else
-            div :class => 'toolbar-button', :id => 'login' do
-                img :src => 'images/login.png'
-                br
-                span 'Log In', :class => 'caption'
-            end
-        end
-        div :class => 'toolbar-button', :id => 'adduser' do
-            img :src => 'images/adduser.png'
-            br
-            span 'Create User', :class => 'caption'
-        end
-    end
-end
 
 get '/toolbar' do
     Toolbar.new(session[:loggedin], session[:username]).to_html
+end
+
+get '/loggedin' do
+    loggedin = session[:loggedin]
+    username = session[:username]
+    if (loggedin) then
+        result = User.by_username :key => username
+        if result.empty? then
+            break [500, "Could not retrieve user details from database"]
+        end
+        content_type :json
+        {
+            :loggedin => true,
+            :username => username,
+            # These are placeholder rights until this is supported
+            :rights => [:post, :reply, :manage_users],
+        }.to_json
+    else
+        content_type :json
+        {   
+            :loggedin => false,
+            :username => nil,
+            :rights => [:manage_users],
+        }.to_json
+    end
 end
 
 post '/login' do
@@ -199,7 +185,14 @@ post '/login' do
     if user.checkPassword? password then
         session[:username]=username
         session[:loggedin]=true
-        200
+        content_type :json
+        {
+            :loggedin => true,
+            :username => username,
+            # These are placeholder rights until this is supported
+            :rights => [:post, :reply, :manage_users],
+        }.to_json
+        
     else
         403
     end
@@ -208,4 +201,11 @@ end
 post '/logout' do
     session[:username]=nil
     session[:loggedin]=false
+    content_type :json
+    {
+        :loggedin => false,
+        :username => nil,
+        # These are placeholder rights until this is supported
+        :rights => [:manage_users],
+    }.to_json
 end

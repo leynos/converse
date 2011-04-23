@@ -10,7 +10,7 @@ class PostController
         users = {};
         names.each do |username|
             result = User.by_username :key => username
-            if result.count == 0 then
+            if result.empty? then
                 next
             end
             user = result[0];
