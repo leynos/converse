@@ -14,7 +14,7 @@ body {
 }
 div.message-cell {
     padding-top: 4px;
-    padding-bottom: 24px;
+    padding-bottom: 40px;
     border-top: 1px solid #AAAAAA;
     clear: both;
     min-height: 108px;

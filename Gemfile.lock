@@ -1,6 +1,9 @@
 GEM
   remote: http://rubygems.org/
   specs:
+    RubyInline (3.9.0)
+      ZenTest (~> 4.3)
+    ZenTest (4.5.0)
     activesupport (3.0.3)
     bcrypt-ruby (2.1.4)
     builder (2.1.2)
@@ -13,6 +16,10 @@ GEM
       builder (>= 2.1.2)
       couchrest (>= 1.0.0)
       mime-types (>= 1.15)
+    fastimage (1.2.8)
+    fastimage_resize (1.2.3)
+      RubyInline (>= 3.8.2)
+      fastimage (>= 1.2.0)
     hoe (1.12.2)
       rake (>= 0.8.4)
       rubyforge (>= 1.0.3)
@@ -40,6 +47,7 @@ DEPENDENCIES
   bcrypt-ruby
   couchrest
   couchrest_extended_document
+  fastimage_resize
   hoe (< 2.0.0)
   i18n
   image_size

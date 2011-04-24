@@ -16,8 +16,13 @@ require 'couchrest_extended_document'
 require 'bcrypt'
 require 'cgi'
 require 'logger'
+require 'image_size'
+require 'fastimage_resize'
 
 class User < CouchRest::ExtendedDocument
+
+    @@avatar_att_name = "avatar"
+    @@avatar_s_att_name = "avatar_s"
 
     property :username
     property :password
@@ -32,7 +37,7 @@ class User < CouchRest::ExtendedDocument
         return "user_"+self.username
     end
 
-    def checkPassword?(password)
+    def check_password?(password)
         logger = Logger.new(STDERR)
         if self.password.nil? then
             logger.warn "No hash available for user #{self.username}"
@@ -42,13 +47,54 @@ class User < CouchRest::ExtendedDocument
         return bPass == password
     end
 
-    def createPassword(password)
+    def create_password(password)
         self.password=BCrypt::Password.create(password)
     end
 
     def displayname
         # Ruby 1.9: self.username.encode :xml => :text 
         CGI.escapeHTML(self.username)
+    end
+
+    def avatar=(file)
+        if self.has_attachment? @@avatar_att_name then
+            self.delete_attachment @@avatar_att_name
+        end
+        self.create_attachment :file => file, :name => @@avatar_att_name
+        self.avatar_s=file
+    end
+
+    def avatar_s=(file)
+
+        # Resize the image to a maximum of 48 pixels wide or high
+        imageSize = ImageSize.new(File.new(file.path))
+        old_w = imageSize.width; old_h = imageSize.height
+        if (imageSize.width > imageSize.height) then
+            w = 48; h = old_h * ( 48.0 / old_w.to_f )
+        else
+            w = old_w * ( 48.0 / old_h.to_f ); h = 48
+        end
+        resized = Tempfile.new @@avatar_s_att_name
+        FastImage.resize(file.path, resized.path, w, h)
+
+        # Save the resized attachment, overwriting if one exists
+        if self.has_attachment? @@avatar_s_att_name then
+            self.delete_attachment @@avatar_s_att_name
+        end
+        self.create_attachment :file => resized, :name => @@avatar_s_att_name
+    end
+
+    def has_avatar?
+        self.has_attachment? @@avatar_att_name and
+            self.has_attachment? @@avatar_s_att_name
+    end
+
+    def avatar
+        self.read_attachment @@avatar_att_name
+    end
+
+    def avatar_s
+        self.read_attachment @@avatar_s_att_name
     end
 
 end

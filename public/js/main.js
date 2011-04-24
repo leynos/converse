@@ -250,7 +250,9 @@ function ThreadUI(delegate) {
         var author = users[author_id];
         if (author) {
             div.prepend('<h3>'+author.displayname+'</h3>');
-            div.prepend('<img src="user/'+encodeURIComponent(author_id)+'/avatar" class="avatar" onerror="this.onerror=null; this.src=\'images/no_avatar.png\'" />');
+            div.prepend('<img src="user/'+encodeURIComponent(author_id)+
+                '/avatar" class="avatar" class="avatar" '+
+                'onerror="this.onerror=null; this.src=\'images/no_avatar.png\'" />');
         }
 
         var messageToolbar = $('<div />', {
@@ -506,7 +508,7 @@ function Converse() {
     }
 }
 
-function toolbarButton(id, image, caption, onclick)
+function toolbarButton(id, image, caption, onclick, onerror)
 {
     var button = $('<div />', {
         id: id,
@@ -514,6 +516,9 @@ function toolbarButton(id, image, caption, onclick)
     });
     if (image) {
         button.append('<img src="'+image+'" /><br />');
+        if (onerror) {
+            button.find('img').error(onerror);
+        }
     }
     button.append('<span class="caption">'+caption+'</span>');
     if (onclick) {
@@ -527,8 +532,12 @@ function loadToolbar(loginInfo)
     $('#toolbar div').remove();
     toolbar = $('#toolbar');
     if (loginInfo.loggedin) {
+        var onerror = function() {
+            this.onerror=null; 
+            this.src='images/no_avatar_s.png';
+        }
         toolbar.append(toolbarButton(
-            'user-badge', 'images/no_avatar_s.png', loginInfo.username, showEditUser));
+            'user-badge', '/user/'+encodeURIComponent(loginInfo.username)+'/avatar/small', loginInfo.username, showEditUser, onerror));
         toolbar.append(toolbarButton(
             'logout', 'images/logout.png', 'Log Out', showConfirmLogout));
     } else {
@@ -585,7 +594,24 @@ function showEditUser(user)
     if ($('#edituser-dialog').length != 0 ) { 
         return false;
     }
-    $('<div id="edituser-dialog">').load("panels/edituser.html").dialog( {
+    var reloadAvatars = function () {
+                $(".avatar").each(function() {
+                    src = $(this).attr('src');
+                    cookie = Math.random();
+                    $(this).attr('src', src+'?'+cookie);
+                });
+                $("#user-badge img").each(function() {
+                    src = $(this).attr('src');
+                    cookie = Math.random();
+                    $(this).attr('src', src+'?'+cookie);
+                });
+            };
+    $('<div id="edituser-dialog">').load("panels/edituser.html", function() {
+            $("#avatar-upload-file").change(function() {
+                this.form.submit();
+                $("#avatar-upload-target").load( reloadAvatars);
+            });
+        }).dialog( {
         resizable: false,
         width: 500,
         title: 'Edit User',
@@ -612,28 +638,36 @@ function showLogin()
     if ($('#login-dialog').length != 0 ) {
         return false;
     }
-    $('<div id="login-dialog">').load("panels/login.html").dialog( {
+    function doLogin() {
+        $('#login-form-error').remove();
+        $.ajax({
+            url: 'login', 
+            data: { 
+                username: $('#login-username-field').val(), 
+                password: $('#login-password-field').val() 
+            },
+            type: 'POST',
+            success: loginCallback,
+            error: function(req, statusText, error) {
+                loginCallback(null, statusText, req, error);
+            },
+        });
+    }
+    $('<div id="login-dialog">').load("panels/login.html", function() {
+        $('#login-form').keypress(function(e){
+            if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
+                e.preventDefault();
+                doLogin();
+            }
+        });
+    }).dialog( {
         resizable: false, 
         width: 350, 
         modal: true,
         title: 'Log In',
         close: function() { $( this ).remove(); },
         buttons: {
-            "Log In": function() {
-                $('#login-form-error').remove();
-                $.ajax( {
-                    url: 'login', 
-                    data: { 
-                        username: $('#login-username-field').val(), 
-                        password: $('#login-password-field').val() 
-                    },
-                    type: 'POST',
-                    success: loginCallback,
-                    error: function(req, statusText, error) {
-                        loginCallback(null, statusText, req, error);
-                    },
-                } );
-            },
+            "Log In": doLogin,
             "Cancel": function() {
                 $( this ).remove();
             }

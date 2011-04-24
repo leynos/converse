@@ -70,24 +70,30 @@ put '/user/:username' do
     end
     user = User.new
     user.username = username
-    user.createPassword password
+    user.create_password password
     logger.info "User created: #{username}, #{password}"
     user.create!
     201
 end
 
-get '/user/:username/avatar' do
-    username = params[:username]
+get %r{/user/([^/]*)/avatar(/small)?} do |username, small|
+    # username = params[:username]
+    if small then
+        logger.info "small specified"
+    end
     result = User.by_username(:key => username)
     if result.empty? then
         break [404, 'The specified user does not exists']
     end
     user = result.first
-    attName = "avatar"
-    if not user.has_attachment? attName
+    if not user.has_avatar?
         break [404, 'The specified user has no avatar']
     end
-    avatar = user.read_attachment attName
+    if small then
+        avatar = user.avatar_s
+    else
+        avatar = user.avatar
+    end
     avatarIO = StringIO.new avatar
     mime = MimeMagic.by_magic avatarIO
     content_type mime.type
@@ -110,7 +116,6 @@ post '/avatar' do
     end
 
     user = result.first
-    attName = "avatar"
     imageSize = ImageSize.new(File.new(tmpfile.path))
     if (imageSize.width > 128 || imageSize.height > 128) then
         break [400, {
@@ -119,18 +124,14 @@ post '/avatar' do
         }.to_json]
     end
 
-    if tmpfile.size > 20480 then
+    if tmpfile.size > 40960 then
         break [400, {
             :error => :file_too_large,
-            :max_bytes => 20480
+            :max_bytes => 40960
         }.to_json]
     end
 
-    if user.has_attachment? attName then
-        user.delete_attachment attName
-    end
-
-    user.create_attachment :file => tmpfile, :name => attName
+    user.avatar = tmpfile
     user.save!
 end
 
@@ -276,7 +277,7 @@ post '/login' do
     end
 
     user = result.first
-    if user.checkPassword? password then
+    if user.check_password? password then
         session[:username]=username
         session[:loggedin]=true
         content_type :json
