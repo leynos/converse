@@ -409,7 +409,7 @@ function ThreadUI(delegate) {
             return false;
         }
         var editor;
-        $('<div id="reply-dialog">').load("reply.html", function () {
+        $('<div id="reply-dialog">').load("panels/reply.html", function () {
             editor = $('#reply-body-field').cleditor({
                 width: "100%", height: "80%", 
                 controls: "bold italic underline strikethrough | " +
@@ -558,7 +558,7 @@ function showAddUser()
     if ($('#user-dialog').length != 0 ) {
         return false;
     }
-    $('<div id="user-dialog">').load("user.html").dialog( {
+    $('<div id="user-dialog">').load("panels/user.html").dialog( {
         resizable: false, 
         width: 350, 
         title: 'Create User',
@@ -585,7 +585,7 @@ function showEditUser(user)
     if ($('#edituser-dialog').length != 0 ) { 
         return false;
     }
-    $('<div id="edituser-dialog">').load("edituser.html").dialog( {
+    $('<div id="edituser-dialog">').load("panels/edituser.html").dialog( {
         resizable: false,
         width: 500,
         title: 'Edit User',
@@ -612,7 +612,7 @@ function showLogin()
     if ($('#login-dialog').length != 0 ) {
         return false;
     }
-    $('<div id="login-dialog">').load("login.html").dialog( {
+    $('<div id="login-dialog">').load("panels/login.html").dialog( {
         resizable: false, 
         width: 350, 
         modal: true,
