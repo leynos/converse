@@ -1,5 +1,20 @@
+/*
+ * Copyright © 2011, David McIntosh <dmcintosh@df12.net>
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
 
-(function (window, document, undefined) {
+(function (window, undefined) {
 
 var root_id = "38bd0a3ccf69621c9695281050000ab2";
 
@@ -375,7 +390,7 @@ function ThreadUI(delegate) {
     {
         if (req.status == 200) {
             $( '#reply-dialog' ).remove();
-            delegate.loadPost(root_id);
+            delegate.reloadCurrentThread();
         } else if (req.status == 403) {
             $('#reply-form')
                 .before('<div class="error" id="reply-form-error">You are not permitted to reply here</div>');
@@ -450,6 +465,12 @@ function Converse() {
 
     var me = this;
     var threadUI;
+    var currentThread;
+
+    this.reloadCurrentThread = function() 
+    {
+        me.loadPost(currentThread);
+    }
 
     this.loadPost = function (post_id)
     {
@@ -478,6 +499,7 @@ function Converse() {
     {
         if (!root_id) root_id = "38bd0a3ccf69621c9695281050000ab2";
 
+        currentThread = root_id;
         // pass self to threadui as delegate
         threadUI = new ThreadUI(me);
         me.loadPost(root_id);
@@ -645,7 +667,7 @@ function showConfirmLogout()
 
 var converse = new Converse();
 
-$(document).ready( function() {
+$(window.document).ready( function() {
     shortcut.add('a', function() {
         threadUI.selectParent();
     }, { 'disable_in_input': true });
@@ -669,7 +691,7 @@ $(document).ready( function() {
     });
 });
 
-})(window, window.document);
+})(window);
 
 
     
