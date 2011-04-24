@@ -111,17 +111,17 @@ post '/avatar' do
 
     user = result.first
     attName = "avatar"
-    if user.has_attachment? attName then
-        break [409, 'An avatar already exists for that user']
+    imageSize = ImageSize.new(File.new(tmpfile.path))
+    if (imageSize.width > 128 || imageSize.height > 128) then
+        break [400, {
+            :error => :image_too_large,
+            :max_size => [128, 128]
+        }.to_json]
     end
 
-#    imageSize = ImageSize.new(tmpfile)
-#    if (imageSize.width > 128 || imageSize.height > 128) then
-#        break [400, {
-#            :error => :image_too_large,
-#            :max_size => [128, 128]
-#        }.to_json]
-#    end
+    if user.has_attachment? attName then
+        user.delete_attachment attName
+    end
 
     user.create_attachment :file => tmpfile, :name => attName
     user.save!
