@@ -119,6 +119,13 @@ post '/avatar' do
         }.to_json]
     end
 
+    if tmpfile.size > 20480 then
+        break [400, {
+            :error => :file_too_large,
+            :max_bytes => 20480
+        }.to_json]
+    end
+
     if user.has_attachment? attName then
         user.delete_attachment attName
     end
