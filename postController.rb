@@ -29,10 +29,13 @@ class PostController
     end
 
     def postsForId(root_id)
+        result = Post.by_ancestor :startkey => [root_id], :endkey => [root_id, {}]
+        addParentsAndChildren(result)
+    end
+
+    def addParentsAndChildren(result)
 
         logger = Logger.new(STDERR)
-
-        result = Post.by_ancestor :startkey => [root_id], :endkey => [root_id, {}]
 
         tmpHash = {}
         result.each do |post|
@@ -73,10 +76,27 @@ class PostController
             end
         end
 
-        # Return a list of posts sorted by date
-        return tmpHash.values.sort do |a, b|
-            a[:date] <=> b[:date]
+        posts = []
+        result.each do |post|
+            tmpPost = tmpHash[post.id]
+            # If this post is a reply and its parent has been deleted
+            if nil != (prnt = post.path.last) and tmpHash[prnt][:id].nil? then
+                tmpPost[:prnt] = nil
+                # Look at each ancestor in turn for a post that exists
+                post.path.reverse.take_while do |anc|
+                    if not tmpHash[anc][:id].nil? then
+                        tmpPost[:prnt] = anc
+                        tmpHash[anc][:children].push tmpPost[:id]
+                        false
+                    else
+                        true
+                    end
+                end
+            end
+            posts.push tmpPost
         end
+
+        return posts
     end
 
 end

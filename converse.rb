@@ -2,6 +2,8 @@ require 'rubygems'
 require 'logger'
 require 'sinatra'
 require 'json'
+require 'mimemagic'
+require 'image_size'
 
 require './user'
 require './post'
@@ -22,6 +24,8 @@ User.save_design_doc!
 controller = PostController.new()
 logger = Logger.new(STDERR)
 
+logger.info "\033]0;Sinatra (Converse)\007"
+
 enable :sessions
 
 get '/' do
@@ -34,7 +38,7 @@ get '/user/:username' do
     if result.empty? then
         [404, 'No user by that name here']
     else
-        user = result[0];
+        user = result.first
         {
             :username => user.username,
             :displayname => user.displayname
@@ -43,26 +47,95 @@ get '/user/:username' do
 end
         
 put '/user/:username' do 
-    content_type :json
+
     username=params[:username]
     password=params[:password]
     result = User.by_username(:key => username)
-    if result.empty? then
-        user = User.new
-        user.username = username
-        user.createPassword password
-        logger.info "User created: #{username}, #{password}"
-        user.create!
-        201
-    else
-        [409, ['username'].to_json]
+    if not result.empty? then
+        break [409, 'A user of that name already exists']
     end
+    user = User.new
+    user.username = username
+    user.createPassword password
+    logger.info "User created: #{username}, #{password}"
+    user.create!
+    201
+end
+
+get '/user/:username/avatar' do
+    username = params[:username]
+    result = User.by_username(:key => username)
+    if result.empty? then
+        break [404, 'The specified user does not exists']
+    end
+    user = result.first
+    attName = "avatar"
+    if not user.has_attachment? attName
+        break [404, 'The specified user has no avatar']
+    end
+    avatar = user.read_attachment attName
+    avatarIO = StringIO.new avatar
+    mime = MimeMagic.by_magic avatarIO
+    content_type mime.type
+    avatar
+end
+
+post '/avatar' do
+    unless session[:loggedin] then
+        break [403, 'You must be logged in to upload an avatar']
+    end
+
+    unless params[:file] && (tmpfile = params[:file][:tempfile]) then
+        break [400, 'A file must be supplied with this request']
+    end
+
+    username = session[:username]
+    result = User.by_username(:key => username)
+    if result.empty? then
+        break [404, 'The specified user does not exists']
+    end
+
+    user = result.first
+    attName = "avatar"
+    if user.has_attachment? attName then
+        break [409, 'An avatar already exists for that user']
+    end
+
+#    imageSize = ImageSize.new(tmpfile)
+#    if (imageSize.width > 128 || imageSize.height > 128) then
+#        break [400, {
+#            :error => :image_too_large,
+#            :max_size => [128, 128]
+#        }.to_json]
+#    end
+
+    user.create_attachment :file => tmpfile, :name => attName
+    user.save!
 end
 
 get '/threads' do
     content_type :json
     result = Post.by_thread
     result.to_json
+end
+
+get '/board' do
+    redirect '/board/default'
+end
+
+get '/board/:board_id' do
+    result = Post.by_thread
+
+    posts = []
+    result.each do |post|
+        tmpPost = {}
+        tmpPost[:subject] = post.subject
+        tmpPost[:date] = post.date
+        tmpPost[:author] = post.author
+        posts.push tmpPost
+    end
+    content_type :json
+    posts.to_json
 end
 
 post '/post/:post_id/reply' do 
@@ -80,7 +153,7 @@ post '/post/:post_id/reply' do
         break [404, 'The post to which you are replying does not exists']
     end
 
-    parent = result[0]
+    parent = result.first
     post = Post.new(
         :subject => params[:subject], 
         :body => params[:body], 
@@ -181,7 +254,7 @@ post '/login' do
         break 403
     end
 
-    user = result[0]
+    user = result.first
     if user.checkPassword? password then
         session[:username]=username
         session[:loggedin]=true

@@ -1,8 +1,6 @@
 
 (function (window, document, undefined) {
 
-var converse = {};
-
 var root_id = "38bd0a3ccf69621c9695281050000ab2";
 
 var logged_in = false;
@@ -16,7 +14,9 @@ function escapeQuotes(value)
         .replace(/'/g, '\\\'').replace(/"/g, '\\\"');
 }
 
-function ThreadUI() {
+function ThreadUI(delegate) {
+
+    var me = this;
 
     var mul=20;
     var vmul=25;
@@ -83,6 +83,11 @@ function ThreadUI() {
         return s;
     }
 
+    // Add the view components
+    $('#view').children().remove();
+    $('#view').append('<div id="notepad"></div>');
+    $('#view').append('<div id="messagepane"></div>');
+
     var paper = Raphael("notepad", 400, 300);
 
     var circles = {};
@@ -119,13 +124,13 @@ function ThreadUI() {
         selected_id = id;
     }
 
+    var select = this.select;
+
     function setPathAttrs(p)
     {
         p.attr("stroke-width", mul/8);
         p.attr("stroke", "gray");
     }
-
-    var select = this.select;
 
     function drawTree(post, x, y)
     {
@@ -222,7 +227,7 @@ function ThreadUI() {
         div.dblclick(function(e) {
             select(post.id, paper);
         });
-        if (null != div.body)
+        if (null != post.body)
         {
             div.html(parser.format(post.body));
         }
@@ -230,11 +235,7 @@ function ThreadUI() {
         var author = users[author_id];
         if (author) {
             div.prepend('<h3>'+author.displayname+'</h3>');
-            if (author.avatar) {
-                div.prepend('<img src="avatar/'+encodeURIComponent(author_id)+'/'+encodeURIComponent(author.avatar)+'" class="avatar" />');
-            } else {
-                div.prepend('<img src="images/no_avatar.png" class="avatar" />');
-            }
+            div.prepend('<img src="user/'+encodeURIComponent(author_id)+'/avatar" class="avatar" onerror="this.onerror=null; this.src=\'images/no_avatar.png\'" />');
         }
 
         var messageToolbar = $('<div />', {
@@ -374,7 +375,7 @@ function ThreadUI() {
     {
         if (req.status == 200) {
             $( '#reply-dialog' ).remove();
-            converse.loadPost(root_id);
+            delegate.loadPost(root_id);
         } else if (req.status == 403) {
             $('#reply-form')
                 .before('<div class="error" id="reply-form-error">You are not permitted to reply here</div>');
@@ -423,31 +424,64 @@ function ThreadUI() {
             }
         } );
     }
+
+    this.noPosts = function() {
+        $("#messagepane").html("No post found! :o");
+    }
+
+    $("#messagepane").height( $(window).height() - $("#notepad").outerHeight() -8 );
+
+    $('#notepad').resizable({
+        containment: 'document',
+        handles: 's'
+    });
+
+    $(window).resize( function() {
+        me.handleResize();
+    });
+
+    $('#notepad').bind( "resize", function(event, ui) {
+        me.handleResize();
+    });
+    
 }
 
-var threadUI = new ThreadUI();
+function Converse() {
 
-converse.loadPost = function (post_id)
-{
-    var modelCallback = function (data, textStatus, response) {
-        if (data.users) {
-            threadUI.addUsers(data.users);
-        }
-        if (data.posts && data.posts.length > 0) {
-            _(data.posts).each(function(post) {
-                threadUI.addPost(post);
-            });
-            threadUI.redrawTree(post_id);
-            // threadUI.select(post_id);
-        } else {
-            $("#messagepane").html("No post found! :o");
-        }
-    };
-    var options = {
-        url: "post/"+encodeURIComponent(post_id),
-        success: modelCallback
-    };
-    $.ajax(options);
+    var me = this;
+    var threadUI;
+
+    this.loadPost = function (post_id)
+    {
+        var modelCallback = function (data, textStatus, response) {
+            if (data.users) {
+                threadUI.addUsers(data.users);
+            }
+            if (data.posts && data.posts.length > 0) {
+                _(data.posts).each(function(post) {
+                    threadUI.addPost(post);
+                });
+                threadUI.redrawTree(post_id);
+                threadUI.select(post_id);
+            } else {
+                threadUI.noPosts();
+            }
+        };
+        var options = {
+            url: "post/"+encodeURIComponent(post_id),
+            success: modelCallback
+        };
+        $.ajax(options);
+    }
+
+    this.viewThread = function(root_id)
+    {
+        if (!root_id) root_id = "38bd0a3ccf69621c9695281050000ab2";
+
+        // pass self to threadui as delegate
+        threadUI = new ThreadUI(me);
+        me.loadPost(root_id);
+    }
 }
 
 function toolbarButton(id, image, caption, onclick)
@@ -457,10 +491,7 @@ function toolbarButton(id, image, caption, onclick)
         class: 'toolbar-button'
     });
     if (image) {
-        button.append($('<img />', {
-            src: image
-        }));
-        button.append('<br />');
+        button.append('<img src="'+image+'" /><br />');
     }
     button.append('<span class="caption">'+caption+'</span>');
     if (onclick) {
@@ -475,18 +506,16 @@ function loadToolbar(loginInfo)
     toolbar = $('#toolbar');
     if (loginInfo.loggedin) {
         toolbar.append(toolbarButton(
-            'user-badge', 'images/no_avatar_s.png', loginInfo.username, null));
+            'user-badge', 'images/no_avatar_s.png', loginInfo.username, showEditUser));
         toolbar.append(toolbarButton(
             'logout', 'images/logout.png', 'Log Out', showConfirmLogout));
     } else {
         toolbar.append(toolbarButton(
             'login', 'images/login.png', 'Log In', showLogin));
+        toolbar.append(toolbarButton(
+            'adduser', 'images/adduser.png', 'Register', showAddUser));
     }
 
-    if (_(loginInfo.rights).include('manage_users')) {
-        toolbar.append(toolbarButton(
-            'adduser', 'images/adduser.png', 'Add User', showAddUser));
-    }
 }
 
 function addUserCallback(req)
@@ -526,6 +555,19 @@ function showAddUser()
                 $( this ).remove();
             }
         }
+    } );
+}
+
+function showEditUser(user)
+{
+    if ($('#edituser-dialog').length != 0 ) { 
+        return false;
+    }
+    $('<div id="edituser-dialog">').load("edituser.html").dialog( {
+        resizable: false,
+        width: 500,
+        title: 'Edit User',
+        close: function() { $( this ).remove(); },
     } );
 }
 
@@ -601,23 +643,9 @@ function showConfirmLogout()
     });
 }
 
+var converse = new Converse();
+
 $(document).ready( function() {
-    $("#messagepane").height( $(window).height() - $("#notepad").outerHeight() -8 );
-
-    $(window).resize( function() {
-        threadUI.handleResize();
-    });
-
-    $('#notepad').resizable({
-        containment: 'document',
-        handles: 's'
-    });
-
-    $('#notepad').bind( "resize", function(event, ui) {
-        threadUI.handleResize();
-    });
-
-
     shortcut.add('a', function() {
         threadUI.selectParent();
     }, { 'disable_in_input': true });
@@ -637,7 +665,7 @@ $(document).ready( function() {
     $.get('loggedin', function(data) {
         loggedin=data.loggedin;
         loadToolbar(data);
-        converse.loadPost(root_id);
+        converse.viewThread();
     });
 });
 
