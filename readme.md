@@ -9,3 +9,13 @@ Right now, all that works is a single thread view. The top pane is the thread ma
 The server is written in Ruby using Sinatra, with a CouchDB database. All of these elements are new to me, so I'm learning this as I go along. Similarly, I'm a novice at JavaScript in many ways.
 
 The thread map is drawn using the cross-browser Raphael library, so it should work in IE as well (it did last time I tested it).
+
+# Usage
+
+Pre-requisites: Ruby, Bundler (optional, but it makes life easier)
+
+    git clone git://github.com/leynos/converse.git
+    cd converse
+    bundle
+    ruby converse.rb
+    firefox http://127.0.0.1:4567/
