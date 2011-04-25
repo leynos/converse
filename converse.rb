@@ -42,8 +42,15 @@ logger.info "\033]0;Sinatra (Converse)\007"
 
 enable :sessions
 
+helpers do
+    def not_loggedin_e(msg='You are not logged in') [403, msg] end
+    def loggedin?() session[:loggedin] end
+    def username?(u) session[:username]==u end
+    def yes_or_true?(v) v=='yes' or v=='true' end
+end
+
 get '/' do
-  File.read(File.join('public', 'index.html'))
+    File.read(File.join('public', 'index.html'))
 end
 
 get '/user/:username' do
@@ -105,22 +112,21 @@ get %r{/user/([^/]*)/avatar(/small)?} do |username, small|
     avatar
 end
 
+# Upload a new avatar for the currently logged in used
 post '/avatar' do
-    unless session[:loggedin] then
-        break [403, 'You must be logged in to upload an avatar']
-    end
+
+    return not_loggedin_e unless loggedin?
 
     unless params[:file] && (tmpfile = params[:file][:tempfile]) then
         break [400, 'A file must be supplied with this request']
     end
 
     username = session[:username]
-    result = User.by_username(:key => username)
-    if result.empty? then
+    user = User.by_username(:key => username).first
+    if user.nil? then
         break [404, 'The specified user does not exists']
     end
 
-    user = result.first
     imageSize = ImageSize.new(File.new(tmpfile.path))
     if (imageSize.width > 128 || imageSize.height > 128) then
         break [400, {
@@ -167,20 +173,15 @@ end
 
 post '/post/:post_id/reply' do 
 
-    unless session[:loggedin] then
-        break [403, 'You are not logged in']
-    end
+    return not_loggedin_e unless loggedin?
 
     post_id = params[:post_id]
-    result = Post.all :key => post_id
+    parent = Post.all(:key => post_id).first
 
-    logger.info result.to_json
-
-    if result.empty? then
+    if parent.nil? then
         break [404, 'The post to which you are replying does not exists']
     end
 
-    parent = result.first
     post = Post.new(
         :subject => params[:subject], 
         :body => params[:body], 
@@ -195,9 +196,7 @@ end
 
 post '/post' do 
 
-    unless session[:loggedin] then
-        break [403, 'You are not logged in']
-    end
+    return not_loggedin_e unless loggedin?
 
     post = Post.new(
         :subject => params[:subject], 
@@ -220,17 +219,23 @@ get '/post/:post_id' do
 end
 
 delete '/post/:post_id' do
-    if params[:recursive] == "yes" or params[:recursive] == "true" then
-        result = Post.by_ancestor :startkey => [post_id], :endkey => [post_id, {}]
-    else
-        result = Post.all :key => :post_id
-    end
-    if result.empty? then
-        break [404, "The post you wish to delete no longer exists"]
-    end
-    result.each do |post|
-        post.destroy
-    end
+
+    return not_loggedin_e unless loggedin?
+#
+#    if yes_or_true? params[:recursive] then
+#        result = Post.by_ancestor :startkey => [post_id], :endkey => [post_id, {}]
+#    else
+#        result = Post.all :key => :post_id
+#    end
+#
+#    if result.empty? then
+#        break [404, "The post you wish to delete no longer exists"]
+#    end
+#
+#    result.each do |post|
+#        post.destroy
+#    end
+
     200
 end
 
@@ -241,20 +246,15 @@ get '/post/:post_id/authors' do
     200
 end
 
-
-get '/toolbar' do
-    Toolbar.new(session[:loggedin], session[:username]).to_html
-end
-
 get '/loggedin' do
-    loggedin = session[:loggedin]
     username = session[:username]
-    if (loggedin) then
-        result = User.by_username :key => username
-        if result.empty? then
-            break [500, "Could not retrieve user details from database"]
+    content_type :json
+    if loggedin? then
+        user = User.by_username(:key => username).first
+        if user.nil? then
+            return [500, "Could not retrieve user details from database"]
         end
-        content_type :json
+
         {
             :loggedin => true,
             :username => username,
@@ -262,7 +262,6 @@ get '/loggedin' do
             :rights => [:post, :reply, :manage_users],
         }.to_json
     else
-        content_type :json
         {   
             :loggedin => false,
             :username => nil,
@@ -272,35 +271,33 @@ get '/loggedin' do
 end
 
 post '/login' do
-    username=params[:username]
-    password=params[:password]
-    rememberme=params[:rememberme]
+    username = params[:username]
+    password = params[:password]
+    rememberme = yes_or_true? params[:rememberme]
 
-    result = User.by_username(:key => username)
-    if result.empty? then
-        break 403
+    user = User.by_username(:key => username).first
+    if user.nil? then
+        return [403, 'Incorrect username or password']
     end
 
-    user = result.first
-    if user.check_password? password then
-        session[:username]=username
-        session[:loggedin]=true
-        content_type :json
-        {
-            :loggedin => true,
-            :username => username,
-            # These are placeholder rights until this is supported
-            :rights => [:post, :reply, :manage_users],
-        }.to_json
-        
-    else
-        403
+    if not user.check_password? password then
+        return [403, 'Incorrect username or password']
     end
+
+    session[:username] = username
+    session[:loggedin] = true
+    content_type :json
+    {
+        :loggedin => true,
+        :username => username,
+        # These are placeholder rights until this is supported
+        :rights => [:post, :reply, :manage_users],
+    }.to_json
 end
 
 post '/logout' do
-    session[:username]=nil
-    session[:loggedin]=false
+    session[:username] = nil
+    session[:loggedin] = false
     content_type :json
     {
         :loggedin => false,
