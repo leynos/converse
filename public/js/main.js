@@ -251,8 +251,7 @@ function ThreadUI(delegate) {
         if (author) {
             div.prepend('<h3>'+author.displayname+'</h3>');
             div.prepend('<img src="user/'+encodeURIComponent(author_id)+
-                '/avatar" class="avatar" class="avatar" '+
-                'onerror="this.onerror=null; this.src=\'images/no_avatar.png\'" />');
+                '/avatar" class="avatar" class="avatar" />');
         }
 
         var messageToolbar = $('<div />', {
@@ -508,7 +507,7 @@ function Converse() {
     }
 }
 
-function toolbarButton(id, image, caption, onclick, onerror)
+function toolbarButton(id, image, caption, onclick)
 {
     var button = $('<div />', {
         id: id,
@@ -516,9 +515,6 @@ function toolbarButton(id, image, caption, onclick, onerror)
     });
     if (image) {
         button.append('<img src="'+image+'" /><br />');
-        if (onerror) {
-            button.find('img').error(onerror);
-        }
     }
     button.append('<span class="caption">'+caption+'</span>');
     if (onclick) {
@@ -532,12 +528,8 @@ function loadToolbar(loginInfo)
     $('#toolbar div').remove();
     toolbar = $('#toolbar');
     if (loginInfo.loggedin) {
-        var onerror = function() {
-            this.onerror=null; 
-            this.src='images/no_avatar_s.png';
-        }
         toolbar.append(toolbarButton(
-            'user-badge', '/user/'+encodeURIComponent(loginInfo.username)+'/avatar/small', loginInfo.username, showEditUser, onerror));
+            'user-badge', '/user/'+encodeURIComponent(loginInfo.username)+'/avatar/small', loginInfo.username, showEditUser));
         toolbar.append(toolbarButton(
             'logout', 'images/logout.png', 'Log Out', showConfirmLogout));
     } else {

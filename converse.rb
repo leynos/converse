@@ -87,7 +87,12 @@ get %r{/user/([^/]*)/avatar(/small)?} do |username, small|
     end
     user = result.first
     if not user.has_avatar?
-        break [404, 'The specified user has no avatar']
+        if small
+            redirect '/images/no_avatar_s.png'
+        else
+            redirect '/images/no_avatar.png'
+        end
+        break
     end
     if small then
         avatar = user.avatar_s
