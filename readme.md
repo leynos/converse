@@ -12,10 +12,14 @@ The thread map is drawn using the cross-browser Raphael library, so it should wo
 
 # Usage
 
-Pre-requisites: Ruby, Bundler (optional, but it makes life easier)
+Pre-requisites: Ruby, CouchDB, Bundler (optional, but it makes life easier)
+
+Start CouchDB.
 
     git clone git://github.com/leynos/converse.git
     cd converse
     bundle
     ruby converse.rb
     firefox http://127.0.0.1:4567/
+
+Or use Heroku with the Cloudant Oxygen add-on.
