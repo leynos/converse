@@ -161,7 +161,7 @@ function ThreadUI(delegate) {
         c.attr("fill", "white");
         c.node.onclick = onclick;
         $(c.node).qtip({
-            content: 'id: '+post.id+'<br />author: '+users[post.author].name+'<br />date: '+post.date,
+            content: 'id: '+post.id+'<br />author: '+users[post.author].displayname+'<br />date: '+post.date,
             show: 'mouseover',
             hide: 'mouseout',
             position: {
