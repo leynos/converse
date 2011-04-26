@@ -1127,7 +1127,7 @@
 		this.isValidArgument = function(settings, argument) {
 			if(argument === null || argument === undefined) return true;
 			var args = argument.split('x');
-			return PHPC.count(args) === 2 && floatval(args[0]) === floor(floatval(args[0])) && floatval(args[1]) === floor(floatval(args[1]));
+			return args.length === 2 && (args[0].match(/^[0-9]+$/)!=null) && (args[1].match(/^[0-9]+$/)!=null)
 		}
 		this.isValidParent = function(settings, parent) { return true; }
 		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
@@ -1137,7 +1137,14 @@
 		}
 		this.close = function(settings, argument, closingCode) {
 			if(closingCode === undefined) closingCode = null;
-			return (closingCode === null)? '" alt="image" style="width: ' + PHPC.intval(args[0]) + '; height: ' + PHPC.intval(args[1]) + '"' + ((settings['XHTML'])? '/>' : '>') : '';
+			var args = argument?argument.split('x'):[];
+            var style='';
+            if (args.length == 2)
+            {
+                style = ' style="width: ' + PHPC.intval(args[0]) + 
+                    '; height: ' + PHPC.intval(args[1]) + '"';
+            }
+			return (closingCode === null)? '" alt="image"' + style + ((settings['XHTML'])? '/>' : '>') : '';
 		}
 	}
 	HTMLImageBBCode.prototype = new BBCode;
