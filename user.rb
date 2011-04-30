@@ -37,6 +37,10 @@ class User < CouchRest::ExtendedDocument
         return "user_"+self.username
     end
 
+    def self.for_username(username)
+        return by_username(:key => username).first
+    end
+
     def check_password?(password)
         logger = Logger.new(STDERR)
         if self.password.nil? then

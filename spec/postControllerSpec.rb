@@ -12,6 +12,8 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+require 'couchrest_extended_document'
+
 require './post.rb'
 require './postController.rb'
 
@@ -19,7 +21,8 @@ samplePosts = [
     { :id => 'post4', :author => 'Aldynes', 
         :date => Time.utc(2008, 7, 8, 9, 10),
         :path => [],
-        :body => "DoDonPachi is the greatest STG of all time" },
+        :body => "DoDonPachi is the greatest STG of all time",
+        :subject => "The Best STG" },
     { :id => 'post5', :author => 'Wesker', 
         :date => Time.utc(2008, 7, 8, 9, 11),
         :path => ['post4'],
@@ -149,5 +152,38 @@ describe "PostController" do
                 output.should == sampleExpectedMod
             end
         end
+    end
+end
+
+describe "Threads" do
+
+    before(:all) do
+        db_url = 'http://127.0.0.1:5984/converse_spec'
+        DB = CouchRest.database!(db_url)
+        CouchRest::Document::use_database DB
+        Post.save_design_doc!
+        samplePosts.each do |p|
+            old_post = (Post.all :key => p[:id]).first
+            old_post.destroy unless old_post.nil?
+            post = Post.new p.clone
+            post.save!
+        end
+    end
+
+    it "should return an array of thread descriptions" do
+        expected = [ 
+            {
+                :id => 'post4',
+                :newest => Time.utc(2008, 7, 8, 9, 19).iso8601, 
+                :replies => 9, 
+                :newest_by => 'Aldynes', 
+                :started_by => 'Aldynes', 
+                :started => Time.utc(2008, 7, 8, 9, 10).iso8601, 
+                :subject => 'The Best STG'
+            }
+        ]
+        pc = PostController.new
+        output=pc.threads 'main'
+        output.should == expected
     end
 end

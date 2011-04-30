@@ -90,3 +90,68 @@ div.error {
     margin: 2px;
 }
 
+#thread-list {
+    margin-top: 128px;
+    padding-left: 64px;
+    padding-right: 64px;
+}
+
+#thread-table {
+    width: 100%;
+}
+
+#thread-list-toolbar {
+    text-align: right;
+    margin-bottom: 16px;
+}
+
+button img {
+    vertical-align: middle;
+}
+
+table {
+    border-collapse: collapse;
+    border: 1px solid #666666;
+    color: #363636;
+    background: #f6f6f6;
+    text-align:left;
+}
+caption {
+    text-align: center;
+    font: bold 16px arial, helvetica, sans-serif;
+    background: transparent;
+    padding:6px 4px 8px 0px;
+    color: #CC00FF;
+    text-transform: uppercase;
+}
+thead, tfoot {
+    background: #ffffff; /* old browsers */
+    background: -moz-linear-gradient(top, #ffffff 0%, #f3f3f3 50%, #ededed 51%, #ffffff 100%); /* firefox */
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#ffffff), color-stop(50%,#f3f3f3), color-stop(51%,#ededed), color-stop(100%,#ffffff)); /* webkit */
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#ffffff',GradientType=0 ); /* ie */
+    background: -o-linear-gradient(top, #ffffff 0%,#f3f3f3 50%,#ededed 51%,#ffffff 100%); /* opera */
+    text-align:left;
+    height:30px;
+}
+thead th, tfoot th {
+    padding:5px;
+}
+table a {
+    color: #333333;
+    text-decoration:none;
+}
+table a:hover {
+    text-decoration:underline;
+}
+tr.odd {
+    background: #f1f1f1;
+}
+tbody th, tbody td {
+    padding:5px;
+}
+th.subject {
+    min-width: 400px;
+    max-width: 800px;
+    width: 60%;
+}
+

@@ -14,6 +14,9 @@
 
 class PostController
 
+    @@logger = Logger.new(STDERR)
+
+
     def usersForId(root_id)
         result = Post.by_first_ancestor :key => root_id, :reduce => true
         if result['rows'].nil? or result['rows'].count == 0 or 
@@ -48,8 +51,6 @@ class PostController
     end
 
     def addParentsAndChildren(result)
-
-        logger = Logger.new(STDERR)
 
         tmpHash = {}
         result.each do |post|
@@ -110,6 +111,27 @@ class PostController
             posts.push tmpPost
         end
 
+        return posts
+    end
+
+    def threads(board)
+        result = Post.by_thread :startkey => [:board], :endkey => [board, {}], :reduce => true, :group_level => 2
+        rows = result["rows"]
+
+        posts = []                                                   
+        rows.each do |row|                                        
+            post = row['value']
+            id = row['key'][1]
+            posts.push({
+                :id => id,
+                :newest => post[0],
+                :replies => post[1],
+                :newest_by => post[2],
+                :started_by => post[3],
+                :started => post[4],
+                :subject => post[5]
+            })
+        end                                                          
         return posts
     end
 

@@ -55,25 +55,22 @@ end
 
 get '/user/:username' do
     username=params[:username]
-    result = User.by_username(:key => username)
-    if result.empty? then
-        [404, 'No user by that name here']
-    else
-        user = result.first
-        {
-            :username => user.username,
-            :displayname => user.displayname
-        }.to_json
+    user = User.for_username username
+    if user.nil? then
+        return [404, 'No user by that name here']
     end
+    {
+        :username => user.username,
+        :displayname => user.displayname
+    }.to_json
 end
         
 put '/user/:username' do 
-
     username=params[:username]
     password=params[:password]
-    result = User.by_username(:key => username)
-    if not result.empty? then
-        break [409, 'A user of that name already exists']
+    old_user = User.for_username username
+    unless old_user.nil? then
+        return [409, 'A user of that name already exists']
     end
     user = User.new
     user.username = username
@@ -84,16 +81,13 @@ put '/user/:username' do
 end
 
 get %r{/user/([^/]*)/avatar(/small)?} do |username, small|
-    # username = params[:username]
-    if small then
-        logger.info "small specified"
-    end
-    result = User.by_username(:key => username)
-    if result.empty? then
+
+    user = User.for_username username
+    if user.nil? then
         break [404, 'The specified user does not exists']
     end
-    user = result.first
-    if not user.has_avatar?
+
+    unless user.has_avatar? then
         if small
             redirect '/images/no_avatar_s.png'
         else
@@ -101,11 +95,13 @@ get %r{/user/([^/]*)/avatar(/small)?} do |username, small|
         end
         break
     end
+
     if small then
         avatar = user.avatar_s
     else
         avatar = user.avatar
     end
+
     avatarIO = StringIO.new avatar
     mime = MimeMagic.by_magic avatarIO
     content_type mime.type
@@ -122,23 +118,25 @@ post '/avatar' do
     end
 
     username = session[:username]
-    user = User.by_username(:key => username).first
+    user = User.for_username username
     if user.nil? then
         break [404, 'The specified user does not exists']
     end
 
+    max_size = [128, 128]
     imageSize = ImageSize.new(File.new(tmpfile.path))
-    if (imageSize.width > 128 || imageSize.height > 128) then
+    if (imageSize.width > max_size[0] || imageSize.height > max_size[1]) then
         break [400, {
             :error => :image_too_large,
-            :max_size => [128, 128]
+            :max_size => max_size
         }.to_json]
     end
 
-    if tmpfile.size > 40960 then
+    max_bytes = 40960
+    if tmpfile.size > max_bytes then
         break [400, {
             :error => :file_too_large,
-            :max_bytes => 40960
+            :max_bytes => max_bytes
         }.to_json]
     end
 
@@ -146,29 +144,17 @@ post '/avatar' do
     user.save!
 end
 
-get '/threads' do
-    content_type :json
-    result = Post.by_thread
-    result.to_json
-end
-
 get '/board' do
-    redirect '/board/default'
+    redirect '/board/main'
 end
 
 get '/board/:board_id' do
-    result = Post.by_thread
-
-    posts = []
-    result.each do |post|
-        tmpPost = {}
-        tmpPost[:subject] = post.subject
-        tmpPost[:date] = post.date
-        tmpPost[:author] = post.author
-        posts.push tmpPost
-    end
+    threads = controller.threads params[:board_id]
+    return 404 if threads.nil?
     content_type :json
-    posts.to_json
+    {
+        :threads => threads
+    }.to_json
 end
 
 post '/post/:post_id/reply' do 
@@ -176,7 +162,7 @@ post '/post/:post_id/reply' do
     return not_loggedin_e unless loggedin?
 
     post_id = params[:post_id]
-    parent = Post.all(:key => post_id).first
+    parent = Post.for_id post_id
 
     if parent.nil? then
         break [404, 'The post to which you are replying does not exists']
@@ -250,7 +236,7 @@ get '/loggedin' do
     username = session[:username]
     content_type :json
     if loggedin? then
-        user = User.by_username(:key => username).first
+        user = User.for_username username
         if user.nil? then
             return [500, "Could not retrieve user details from database"]
         end
@@ -265,6 +251,7 @@ get '/loggedin' do
         {   
             :loggedin => false,
             :username => nil,
+            # These are placeholder rights until this is supported
             :rights => [:manage_users],
         }.to_json
     end
@@ -275,7 +262,7 @@ post '/login' do
     password = params[:password]
     rememberme = yes_or_true? params[:rememberme]
 
-    user = User.by_username(:key => username).first
+    user = User.for_username username
     if user.nil? then
         return [403, 'Incorrect username or password']
     end

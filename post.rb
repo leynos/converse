@@ -24,21 +24,71 @@ class Post < CouchRest::ExtendedDocument
 
     view_by  :author, :date
 
-    # simple list of threads.  We'll improve on this later
     view_by  :thread,
         :map => "function(doc) {
             if (doc['couchrest-type'] == 'Post') 
             {
+                var board = 'main';
+                if (doc.board)
+                {
+                    board = doc.board;
+                }
                 if (doc.path.length == 0)
                 {
-                    emit(doc._id, {
-                        id: doc._id, 
-                        subject: doc.subject, 
-                        author: doc.author, 
-                        date: doc.date
-                    });
+                    // post
+                    emit([board, doc._id, doc.date, 0, doc.subject], doc);
+                } else {
+                    // reply
+                    emit([board, doc.path[0], doc.date, 1], doc, null);
                 }
             }
+        }",
+        # Returns an array for each thread: 
+        #   [   date of most recent post, 
+        #       reply count, 
+        #       most recent author, 
+        #       originating author, 
+        #       starting date,
+        #       opening subject]
+        :reduce => "function(key, values, rereduce) {
+            var sum = ['', 0, null, null, null];
+            if (rereduce)
+            {
+                values.forEach(function(amt) {
+                    sum[1] += amt[1];
+                    if (amt[0] > sum[0])
+                    {
+                        sum[0] = amt[0];
+                        sum[2] = amt[2];
+                    }
+                    if (amt[3]) sum[3] = amt[3];
+                    if (amt[4]) sum[4] = amt[4];
+                    if (amt[5]) sum[5] = amt[5];
+                });
+            } else {
+                var i = 0;
+                key.forEach(function(k) {
+                    var doc = values[i];
+                    i++;
+                    // if this is a reply
+                    if (k[0][3] > 0)
+                    {
+                        sum[1]++;
+                    } else {
+                        // else capture the author and date
+                        sum[3] = doc.author;
+                        sum[4] = k[0][2];
+                        sum[5] = doc.subject;
+                    }
+                    // if this is the newest reply (or post), capture the date and author
+                    if (k[0][2] > sum[0])
+                    {
+                        sum[0] = k[0][2];
+                        sum[2] = doc.author;
+                    }
+                });
+            }
+            return sum;
         }"
 
     view_by  :first_ancestor,
@@ -82,6 +132,10 @@ class Post < CouchRest::ExtendedDocument
                 emit([doc._id, doc.date], doc);
             } 
         }"
+
+    def self.for_id(post_id)
+        return all(:key => post_id).first
+    end
 
     def setParent(parent)
         # Inherit the parent's path
