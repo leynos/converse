@@ -14,7 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-(function (window, undefined) {
+(function (window) {
 
 
 var root_id = "38bd0a3ccf69621c9695281050000ab2";
@@ -52,13 +52,13 @@ Date.prototype.setISO8601 = function (string) {
 // placing text in a js event
 function escapeQuotes(value) 
 {
-    if(!value) return "";
+    if(!value) { return ""; }
     return value.replace(/\\/g, '\\\\')
         .replace(/'/g, '\\\'').replace(/"/g, '\\\"');
 }
 
 function htmlSpecialChars(value) {
-    if(!value) return "";
+    if(!value) { return ""; }
     return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;")
         .replace(/>/g, "&gt;").replace(/"/g, "&quot")
         .replace(/'/g, "&#039");
@@ -80,7 +80,7 @@ function ThreadUI(delegate)
         var p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
         setPathAttrs(p);
         return p;
-    }
+    };
 
     Raphael.fn.tee = function(x, y) {
         var s = this.set();
@@ -92,7 +92,7 @@ function ThreadUI(delegate)
         var p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
         setPathAttrs(p);
         return p;
-    }
+    };
 
     Raphael.fn.el = function(x, y) {
         var x1=(x)*mul;
@@ -104,7 +104,7 @@ function ThreadUI(delegate)
         var p = this.path(sprintf("M%d %d L%d %d L%d %d", x1, y1, x2, y2, x3, y3));
         setPathAttrs(p);
         return p;
-    }
+    };
 
     Raphael.fn.bar = function(x, y) {
         var x1=(x)*mul;
@@ -114,27 +114,27 @@ function ThreadUI(delegate)
         var p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
         setPathAttrs(p);
         return p;
-    }
+    };
 
     Raphael.fn.rtee = function(x, y) {
-        var s = this.set()
+        var s = this.set();
         s.push(this.bar(x, y));
         var x1=(x)*mul;
         var y1=(y)*vmul;
         var x2=(x+0.5)*mul;
         var y2=(y)*vmul;
-        var p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2))
+        var p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
         setPathAttrs(p);
         s.push(p);
         return s;
-    }
+    };
 
     // Add the view components
     $('#view').children().remove();
     $('#view').append('<div id="notepad"></div>');
     $('#view').append('<div id="messagepane"></div>');
 
-    var paper = Raphael("notepad", 400, 300);
+    var paper = new Raphael("notepad", 400, 300);
 
     var circles = {};
 
@@ -142,18 +142,19 @@ function ThreadUI(delegate)
 
     // Select a post and draw the selection circle
     this.select = function(id) {
-        var messageCell = $(".selected-message")
+        var messageCell = $(".selected-message");
         if (messageCell) {
             messageCell.removeClass("selected-message");
         }
-        messageCell = $("#post-"+id)
+        messageCell = $("#post-"+id);
         if (messageCell) {
             messageCell.addClass("selected-message");
         }
 
         // If a delection exists already, remove it and draw a new one
-        if (selection)
+        if (selection) {
             selection.remove();
+        }
         var c = circles[id];
         if (c) {
             cx = c.attr("cx");
@@ -167,7 +168,7 @@ function ThreadUI(delegate)
         $("#messagepane").scrollTo( "#post-"+id , 400, {axis:'y'} );
 
         selected_id = id;
-    }
+    };
 
     var select = this.select;
 
@@ -177,8 +178,8 @@ function ThreadUI(delegate)
     }
 
     function drawTree(post, x, y) {
-        if (!x) x=1;
-        if (!y) y=1;
+        if (!x) { x=1; }
+        if (!y) { y=1; }
 
         var c = paper.circle(x*mul, y*vmul, mul*0.4);
         var id = post.id;
@@ -224,7 +225,7 @@ function ThreadUI(delegate)
             i += dy;
             count += 1;
         });
-        return (i==0) ? 1 : i;
+        return (0===i) ? 1 : i;
     }
 
     this.redrawTree = function (post_id, x, y) {
@@ -234,7 +235,7 @@ function ThreadUI(delegate)
         }
         paper.clear();
         drawTree(postsHash[post_id]);
-    }
+    };
 
     var postsHash = {};
     var orderedPosts = [];
@@ -244,7 +245,7 @@ function ThreadUI(delegate)
     this.addPost = function (post) {
         // Skip this post if we have it already
         // Layer, maybe update the body if needs be
-        if (null != postsHash[post.id]) {
+        if (postsHash[post.id]) {
             postsHash[post.id].children = post.children;
             return;
         }
@@ -267,7 +268,7 @@ function ThreadUI(delegate)
         div.dblclick(function(e) {
             select(post.id, paper);
         });
-        if (null != post.body)
+        if (null !== post.body)
         {
             div.html(parser.format(post.body));
         }
@@ -308,11 +309,11 @@ function ThreadUI(delegate)
                 prnt.append(div);
             }
         }
-    }
+    };
 
     this.addUsers = function (data) {
         $.extend(users, data);
-    }
+    };
 
     var selected_id;
 
@@ -325,7 +326,7 @@ function ThreadUI(delegate)
         if (id) {
             select(id, paper);
         }
-    }
+    };
 
     function firstChild(id) {
         return _(postsHash[id].children).first();
@@ -336,7 +337,7 @@ function ThreadUI(delegate)
         if (id) {
             select(id, paper);
         }
-    }
+    };
 
     function nextCousin(id) {
         var prnt = id;
@@ -345,8 +346,9 @@ function ThreadUI(delegate)
         while (!cand) {
             var old_prnt = prnt;
             prnt = par(old_prnt);
-            if (!prnt)
+            if (!prnt) {
                 return null; // we've hit the root and still not found a cousin
+            }
             depth++;
             cand = prnt;
             var j = 0;
@@ -354,8 +356,9 @@ function ThreadUI(delegate)
                 var children = postsHash[cand].children;
                 var i= _(children).indexOf(old_prnt);
                 cand = children[i+1];
-                if (!cand)
+                if (!cand) {
                     break; // reached a leaf before finding a cousin
+                }
                 j++;
             }
         }
@@ -368,7 +371,7 @@ function ThreadUI(delegate)
         if (id) {
             select(id, paper);
         }
-    }
+    };
 
     function prevCousin(id) {
         var prnt = id;
@@ -377,8 +380,9 @@ function ThreadUI(delegate)
         while (!cand) {
             var old_prnt = prnt;
             prnt = par(old_prnt);
-            if (!prnt)
+            if (!prnt) {
                 return null; // we've hit the root and still not found a cousin
+            }
             depth++;
             cand = prnt;
             var j = 0;
@@ -386,8 +390,9 @@ function ThreadUI(delegate)
                 var children = postsHash[cand].children;
                 var i= _(children).indexOf(old_prnt);
                 cand = i<0?children[children.length-1]:children[i-1];
-                if (!cand)
+                if (!cand) {
                     break; // reached a leaf before finding a cousin
+                }
                 j++;
             }
         }
@@ -399,12 +404,12 @@ function ThreadUI(delegate)
         if (id) {
             select(id, paper);
         }
-    }
+    };
 
     this.handleResize = function () {
         $("#messagepane").height( $(window).height() - $("#notepad").outerHeight() -8 );
         $("#notepad").width( $(window).width() - 16 );
-    }
+    };
 
     function replyCallback (req) {
         if (req.status == 200) {
@@ -423,7 +428,7 @@ function ThreadUI(delegate)
     }
 
     function showReply(postId) {
-        if ($('#reply-dialog').length != 0 ) {
+        if ($('#reply-dialog').length !== 0 ) {
             return false;
         }
         var editor;
@@ -460,7 +465,7 @@ function ThreadUI(delegate)
 
     this.noPosts = function() {
         $("#messagepane").html("No post found! :o");
-    }
+    };
 
     $("#messagepane").height( $(window).height() - $("#notepad").outerHeight() -8 );
 
@@ -498,7 +503,7 @@ function ThreadUI(delegate)
         shortcut.remove('s');
         shortcut.remove('d');
         shortcut.remove('w');
-    }
+    };
 }
 
 function BoardUI(delegate) 
@@ -509,10 +514,10 @@ function BoardUI(delegate)
     $('#view').append('<div id="thread-list"></div>');
     $('#thread-list').append('<div id="thread-list-toolbar"></div>');
     $('#thread-list-toolbar').append(
-        $( '<button id="new-thread-button"><img src="images/newthread.png"> Create a new thread</button>' 
-    ).button().click(function() {
-        showPost(delegate.currentBoard);
-    }));
+        $( '<button id="new-thread-button"><img src="images/newthread.png"> Create a new thread</button>' )
+            .button().click(function() {
+                showPost(delegate.currentBoard);
+            }));
     $('#thread-list').append('<table id="thread-table"></table>');
     $('#thread-table').append('<thead><th class="subject">Subject</th><th>Replies</th><th>Last Post By</th></thead><tbody></tbody>');
 
@@ -528,23 +533,21 @@ function BoardUI(delegate)
             htmlSpecialChars(thread.subject) + '</a></td><td>' + 
             htmlSpecialChars(thread.replies) + '</td><td>' +
             htmlSpecialChars(thread.newest_by) + ' (' +
-            newest.toLocaleDateString() + ')</td></tr>'
-        );
+            newest.toLocaleDateString() + ')</td></tr>');
         $('#thread-table > tbody').append(
             '<tr class="byline ' + (odd?' odd':'') + '"><td colspan=3 ><small>' + 
             'Started by: ' + htmlSpecialChars(thread.started_by) + ' (' + 
-            started.toLocaleDateString() + ')</small></td></tr>'
-        );
+            started.toLocaleDateString() + ')</small></td></tr>');
         odd = !odd;
-    }
+    };
 
     this.noThreads = function () {
         $('#thread-list').text('No threads have been posted to this board');
-    }
+    };
 
     this.removeAllThreads = function() {
         $('#thread-table tbody tr').remove();
-    }
+    };
 
     function postCallback (req) {
         if (req.status == 200) {
@@ -563,7 +566,7 @@ function BoardUI(delegate)
     }
 
     function showPost(board_id) {
-        if ($('#post-dialog').length != 0 ) {
+        if ($('#post-dialog').length !== 0 ) {
             return false;
         }
         var editor;
@@ -600,7 +603,7 @@ function BoardUI(delegate)
         } );
     }
 
-    this.destroy = function() { }
+    this.destroy = function() { };
 }
 
 function Converse() 
@@ -610,7 +613,7 @@ function Converse()
 
     this.reloadCurrentThread = function() {
         me.loadPost(me.currentThread);
-    }
+    };
 
     this.loadPost = function (post_id) {
         var modelCallback = function (data, textStatus, response) {
@@ -632,19 +635,19 @@ function Converse()
             success: modelCallback
         };
         $.ajax(options);
-    }
+    };
 
     this.reloadCurrentBoard = function() {
         view.removeAllThreads();
         me.loadBoard(me.currentBoard);
-    }
+    };
 
     this.loadBoard = function (board_id) {
         var modelCallback = function (data, textStatus, response) {
             if (data.threads)
             {
                 _(data.threads).each(function(thread) {
-                    view.addThread(thread)
+                    view.addThread(thread);
                 });
             } else {
                 view.noThreads();
@@ -655,30 +658,28 @@ function Converse()
             success: modelCallback
         };
         $.ajax(options);
-    }
+    };
 
     this.setView = function(v) {
-        if (view) view.destroy();
+        if (view) { view.destroy(); }
         view = v;
-    }
+    };
 
     this.viewThread = function(root_id) {
-        if (!root_id) root_id = "38bd0a3ccf69621c9695281050000ab2";
-
         me.currentThread = root_id;
         // pass self to threadui as delegate
         me.setView(new ThreadUI(me));
         me.loadPost(root_id);
-    }
+    };
 
     this.viewBoard = function(board_id) {
-        if (!board_id) board_id = 'main';
+        if (!board_id) { board_id = 'main'; }
 
         me.currentBoard = board_id;
         // pass self to threadui as delegate
         me.setView(new BoardUI(me));
         me.loadBoard(board_id);
-    }
+    };
 }
 
 function toolbarButton(id, image, caption, onclick) 
@@ -700,7 +701,7 @@ function toolbarButton(id, image, caption, onclick)
 function loadToolbar(loginInfo) 
 {
     $('#toolbar div').remove();
-    toolbar = $('#toolbar');
+    var toolbar = $('#toolbar');
     if (loginInfo.loggedin) {
         toolbar.append(toolbarButton(
             'user-badge', '/user/'+encodeURIComponent(loginInfo.username)+'/avatar/small', loginInfo.username, showEditUser));
@@ -730,7 +731,7 @@ function addUserCallback(req)
 
 function showAddUser() 
 {
-    if ($('#user-dialog').length != 0 ) {
+    if ($('#user-dialog').length !== 0 ) {
         return false;
     }
     $('<div id="user-dialog">').load("panels/user.html").dialog( {
@@ -757,7 +758,7 @@ function showAddUser()
 
 function showEditUser(user) 
 {
-    if ($('#edituser-dialog').length != 0 ) { 
+    if ($('#edituser-dialog').length !== 0 ) { 
         return false;
     }
     var reloadAvatars = function () {
@@ -801,7 +802,7 @@ function loginCallback(data, statusText, req, error)
 
 function showLogin() 
 {
-    if ($('#login-dialog').length != 0 ) {
+    if ($('#login-dialog').length !== 0 ) {
         return false;
     }
     function doLogin() {
