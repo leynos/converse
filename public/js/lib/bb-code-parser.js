@@ -255,7 +255,7 @@
 			'CodeBackground'           : 'white',
 			'CodeCSSClassName'         : 'codebox-{lang}', /* {lang} is the code parameter ex: [code=PHP], {lang} = php */
 			'LinkUnderline'            : true,
-			'LinkColor'                : 'blue',
+			'LinkColor'                : 'blue'
 			/*'UnorderedListDefaultType' : 'circle',*/ // Uncomment these to tell the BB-Code parser to use this
 			/*'OrderedListDefaultType'   : '1',     */ // default type if the given one is invalid **
 			/*'ListDefaultType'          : 'circle' */ // ...

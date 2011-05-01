@@ -261,7 +261,7 @@ function ThreadUI(delegate)
         // Assemble a div object for the post
         var div = $('<div>', {
             id: "post-"+post.id,
-            class: "message-cell"
+            'class': "message-cell"
         });
         div.dblclick(function(e) {
             select(post.id, paper);

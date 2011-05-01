@@ -167,7 +167,7 @@ get '/board/:board_id' do
     {
         :title => board.title,
         :description => board.description,
-        :may_post => board.user_may_post? user,
+        :may_post => (board.user_may_post? user),
         :threads => threads
     }.to_json
 end
