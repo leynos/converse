@@ -158,8 +158,10 @@ get '/board/:board_id' do
     board = Board.for_name params[:board_id]
     return board_not_found_e if board.nil?
 
-    user = User.for_name session[:username]
-    return user_db_e if user.nil?
+    if loggedin? then
+        user = User.for_username session[:username]
+        return user_db_e if user.nil?
+    end
 
     threads = controller.threads params[:board_id]
 
@@ -167,7 +169,12 @@ get '/board/:board_id' do
     {
         :title => board.title,
         :description => board.description,
-        :may_post => (board.user_may_post? user),
+        :may_post => 
+            if loggedin? then 
+                (board.user_may_post? user) 
+            else 
+                false 
+            end,
         :threads => threads
     }.to_json
 end
@@ -176,10 +183,10 @@ put '/board/:board_id' do
     
     return not_loggedin_e unless loggedin?
 
-    user = User.for_name session[:username]
+    user = User.for_username session[:username]
     return user_db_e if user.nil?
     return 403 unless user.has_role? :admin
-    old_board = board.for_name params[:board_id]
+    old_board = Board.for_name params[:board_id]
     unless old_board.nil? then
         return [409, 'A board with that name already exists']
     end
@@ -207,7 +214,7 @@ delete '/board/:board_id' do
     
     return not_loggedin_e unless loggedin?
 
-    user = User.for_name session[:username]
+    user = User.for_username session[:username]
     return user_db_e if user.nil?
     return 403 unless user.has_role? :admin
     board = board.for_name params[:board_id]

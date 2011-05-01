@@ -24,11 +24,12 @@ var logged_in = false;
 // From http://delete.me.uk/2005/03/iso8601.html
 Date.prototype.setISO8601 = function (string) {
     var regexp = "([0-9]{4})(-([0-9]{2})(-([0-9]{2})" +
-        "(T([0-9]{2}):([0-9]{2})(:([0-9]{2})(\.([0-9]+))?)?" +
+        "(T([0-9]{2}):([0-9]{2})(:([0-9]{2})(\\.([0-9]+))?)?" +
         "(Z|(([-+])([0-9]{2}):([0-9]{2})))?)?)?)?";
     var d = string.match(new RegExp(regexp));
 
     var offset = 0;
+    var time;
     var date = new Date(d[1], 0, 1);
 
     if (d[3]) { date.setMonth(d[3] - 1); }
@@ -45,7 +46,7 @@ Date.prototype.setISO8601 = function (string) {
     offset -= date.getTimezoneOffset();
     time = (Number(date) + (offset * 60 * 1000));
     this.setTime(Number(time));
-}
+};
 
 // Replace quotes with an appropriate escape sequence to allow 
 // placing text in a js event
@@ -72,57 +73,57 @@ function ThreadUI(delegate)
     var vmul=25;
 
     Raphael.fn.dash = function(x, y) {
-        x1=(x-0.5)*mul;
-        y1=(y)*vmul;
-        x2=(x+0.5)*mul;
-        y2=(y)*vmul;
-        p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
+        var x1=(x-0.5)*mul;
+        var y1=(y)*vmul;
+        var x2=(x+0.5)*mul;
+        var y2=(y)*vmul;
+        var p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
         setPathAttrs(p);
         return p;
     }
 
     Raphael.fn.tee = function(x, y) {
-        s = this.set();
+        var s = this.set();
         s.push(this.dash(x, y));
-        x1=(x)*mul;
-        y1=(y)*vmul;
-        x2=(x)*mul;
-        y2=(y+0.5)*vmul;
-        p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
+        var x1=(x)*mul;
+        var y1=(y)*vmul;
+        var x2=(x)*mul;
+        var y2=(y+0.5)*vmul;
+        var p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
         setPathAttrs(p);
         return p;
     }
 
     Raphael.fn.el = function(x, y) {
-        x1=(x)*mul;
-        y1=(y-0.5)*vmul;
-        x2=(x)*mul;
-        y2=(y)*vmul;
-        x3=(x+0.5)*mul;
-        y3=(y)*vmul;
-        p = this.path(sprintf("M%d %d L%d %d L%d %d", x1, y1, x2, y2, x3, y3));
+        var x1=(x)*mul;
+        var y1=(y-0.5)*vmul;
+        var x2=(x)*mul;
+        var y2=(y)*vmul;
+        var x3=(x+0.5)*mul;
+        var y3=(y)*vmul;
+        var p = this.path(sprintf("M%d %d L%d %d L%d %d", x1, y1, x2, y2, x3, y3));
         setPathAttrs(p);
         return p;
     }
 
     Raphael.fn.bar = function(x, y) {
-        x1=(x)*mul;
-        y1=(y-0.5)*vmul;
-        x2=(x)*mul;
-        y2=(y+0.5)*vmul;
-        p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
+        var x1=(x)*mul;
+        var y1=(y-0.5)*vmul;
+        var x2=(x)*mul;
+        var y2=(y+0.5)*vmul;
+        var p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
         setPathAttrs(p);
         return p;
     }
 
     Raphael.fn.rtee = function(x, y) {
-        s = this.set()
+        var s = this.set()
         s.push(this.bar(x, y));
-        x1=(x)*mul;
-        y1=(y)*vmul;
-        x2=(x+0.5)*mul;
-        y2=(y)*vmul;
-        p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2))
+        var x1=(x)*mul;
+        var y1=(y)*vmul;
+        var x2=(x+0.5)*mul;
+        var y2=(y)*vmul;
+        var p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2))
         setPathAttrs(p);
         s.push(p);
         return s;
