@@ -279,16 +279,16 @@ function ThreadUI(delegate)
         }
 
         var messageToolbar = $('<div />', {
-            'class': 'message-toolbar',
+            'class': 'message-toolbar'
         });
         var deleteButton = $('<img />', {
             src: 'images/deletepost_s.png',
-            'class': 'message-control delete-button',
+            'class': 'message-control delete-button'
         });
         messageToolbar.append(deleteButton);
         var replyButton = $('<img />', {
             src: 'images/reply_s.png',
-            'class': 'message-control reply-button',
+            'class': 'message-control reply-button'
         });
         replyButton.click(function () {
             showReply(post.id);
@@ -431,7 +431,7 @@ function ThreadUI(delegate)
                 width: "100%", height: "80%", 
                 controls: "bold italic underline strikethrough | " +
                     "| bullets numbering " + "| undo redo | " +
-                    "rule image link unlink | source",})[0];
+                    "rule image link unlink | source"})[0];
         }).dialog( {
             resizable: true, 
             width: 640, 
@@ -571,7 +571,7 @@ function BoardUI(delegate)
                 width: "100%", height: "80%", 
                 controls: "bold italic underline strikethrough | " +
                     "| bullets numbering " + "| undo redo | " +
-                    "rule image link unlink | source",})[0];
+                    "rule image link unlink | source"})[0];
         }).dialog( {
             resizable: true, 
             width: 640, 
