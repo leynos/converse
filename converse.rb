@@ -274,7 +274,7 @@ post '/post/:post_id/reply' do
         :board => parent.board,
         :date => Time.now
     )
-    post.setParent(parent)
+    post.set_parent(parent)
     post.create!
     
     200

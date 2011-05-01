@@ -31,9 +31,9 @@ class User < CouchRest::ExtendedDocument
 
     view_by  :username
 
-    unique_id :idString
+    unique_id :id_string
 
-    def idString
+    def id_string
         return "user_"+self.username
     end
 

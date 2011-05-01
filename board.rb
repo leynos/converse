@@ -44,9 +44,9 @@ class Board < CouchRest::ExtendedDocument
 
     view_by  :name
 
-    unique_id :idString
+    unique_id :id_string
 
-    def idString
+    def id_string
         return "board_"+self.name
     end
 

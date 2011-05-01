@@ -138,7 +138,7 @@ class Post < CouchRest::ExtendedDocument
         return all(:key => post_id).first
     end
 
-    def setParent(parent)
+    def set_parent(parent)
         # Inherit the parent's path
         self.path = parent.path + [parent.id]
     end
