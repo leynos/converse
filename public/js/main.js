@@ -447,7 +447,7 @@ function ThreadUI(delegate)
                             body: $('#reply-body-field').val() 
                         },
                         type: 'POST',
-                        complete: replyCallback,
+                        complete: replyCallback
                     } );
                 },
                 "Cancel": function() {
@@ -877,7 +877,7 @@ $(window.document).ready( function() {
     var routes = {
         board: converse.viewBoard,
         thread: converse.viewThread,
-        'default': converse.viewBoard,
+        'default': converse.viewBoard
     };
     $(window).bind( 'hashchange', function(e) {
         var url = location.hash;
