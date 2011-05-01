@@ -116,11 +116,11 @@ describe "sample input and output data" do
 end
 
 describe "PostController" do                                              
-    describe "#addParentsAndChildren" do                                              
+    describe "#add_parents_and_children" do                                              
         it "Returns an array with a single post hash when passed an array with a single post" do 
             pc = PostController.new
             input=[Post.new(samplePosts[0].clone)]
-            output=pc.addParentsAndChildren(input)
+            output=pc.add_parents_and_children(input)
             expected=sampleExpected[0].clone
             expected[:children]=[]
             output.should == [expected]
@@ -131,7 +131,7 @@ describe "PostController" do
             pc = PostController.new
             input = []
             samplePosts.each { |post| input.push Post.new(post.clone) }
-            output=pc.addParentsAndChildren(input)
+            output=pc.add_parents_and_children(input)
             output.should == sampleExpected
         end
 
@@ -142,7 +142,7 @@ describe "PostController" do
                 samplePostsMod = samplePosts.clone
                 samplePostsMod.delete_at 1
                 samplePostsMod.each { |post| input.push Post.new(post.clone) }
-                output=pc.addParentsAndChildren(input)
+                output=pc.add_parents_and_children(input)
 
                 sampleExpectedMod = sampleExpected.clone
                 sampleExpectedMod[0][:children] = ['post6', 'post7', 'post51', 'post52']
@@ -153,37 +153,38 @@ describe "PostController" do
             end
         end
     end
-end
 
-describe "Threads" do
+    describe "#threads" do
 
-    before(:all) do
-        db_url = 'http://127.0.0.1:5984/converse_spec'
-        DB = CouchRest.database!(db_url)
-        CouchRest::Document::use_database DB
-        Post.save_design_doc!
-        samplePosts.each do |p|
-            old_post = (Post.all :key => p[:id]).first
-            old_post.destroy unless old_post.nil?
-            post = Post.new p.clone
-            post.save!
+        before(:all) do
+            db_url = 'http://127.0.0.1:5984/converse_spec'
+            DB = CouchRest.database!(db_url)
+            CouchRest::Document::use_database DB
+            Post.save_design_doc!
+            samplePosts.each do |p|
+                old_post = (Post.all :key => p[:id]).first
+                old_post.destroy unless old_post.nil?
+                post = Post.new p.clone
+                post.save!
+            end
+        end
+
+        it "should return an array of thread descriptions" do
+            expected = [ 
+                {
+                    :id => 'post4',
+                    :newest => Time.utc(2008, 7, 8, 9, 19).iso8601, 
+                    :replies => 9, 
+                    :newest_by => 'Aldynes', 
+                    :started_by => 'Aldynes', 
+                    :started => Time.utc(2008, 7, 8, 9, 10).iso8601, 
+                    :subject => 'The Best STG'
+                }
+            ]
+            pc = PostController.new
+            output=pc.threads 'main'
+            output.should == expected
         end
     end
-
-    it "should return an array of thread descriptions" do
-        expected = [ 
-            {
-                :id => 'post4',
-                :newest => Time.utc(2008, 7, 8, 9, 19).iso8601, 
-                :replies => 9, 
-                :newest_by => 'Aldynes', 
-                :started_by => 'Aldynes', 
-                :started => Time.utc(2008, 7, 8, 9, 10).iso8601, 
-                :subject => 'The Best STG'
-            }
-        ]
-        pc = PostController.new
-        output=pc.threads 'main'
-        output.should == expected
-    end
 end
+

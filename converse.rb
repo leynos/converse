@@ -299,8 +299,8 @@ get '/post/:post_id' do
     post_id = params[:post_id]
 
     {
-        :posts => controller.postsForId(post_id),
-        :users => controller.usersForId(post_id)
+        :posts => controller.posts_for_id(post_id),
+        :users => controller.users_for_id(post_id)
     }.to_json
 end
 

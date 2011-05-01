@@ -17,7 +17,7 @@ class PostController
     @@logger = Logger.new(STDERR)
 
 
-    def usersForId(root_id)
+    def users_for_id(root_id)
         result = Post.by_first_ancestor :key => root_id, :reduce => true
         if result['rows'].nil? or result['rows'].count == 0 or 
            result['rows'][0]['value'].nil? then
@@ -45,12 +45,12 @@ class PostController
         return users
     end
 
-    def postsForId(root_id)
+    def posts_for_id(root_id)
         result = Post.by_ancestor :startkey => [root_id], :endkey => [root_id, {}]
-        addParentsAndChildren(result)
+        add_parents_and_children(result)
     end
 
-    def addParentsAndChildren(result)
+    def add_parents_and_children(result)
 
         tmpHash = {}
         result.each do |post|
