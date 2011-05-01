@@ -590,7 +590,7 @@ function BoardUI(delegate)
                             board: board_id
                         },
                         type: 'POST',
-                        complete: postCallback,
+                        complete: postCallback
                     } );
                 },
                 "Cancel": function() {
@@ -781,7 +781,7 @@ function showEditUser(user)
         resizable: false,
         width: 500,
         title: 'Edit User',
-        close: function() { $( this ).remove(); },
+        close: function() { $( this ).remove(); }
     } );
 }
 
@@ -816,7 +816,7 @@ function showLogin()
             success: loginCallback,
             error: function(req, statusText, error) {
                 loginCallback(null, statusText, req, error);
-            },
+            }
         });
     }
     $('<div id="login-dialog">').load("panels/login.html", function() {
