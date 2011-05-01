@@ -26,8 +26,8 @@ class User < CouchRest::ExtendedDocument
 
     property :username
     property :password
-    property :role
-    property :rights
+    property :roles,        [String]
+    property :groups,       [String]
 
     view_by  :username
 
@@ -99,6 +99,19 @@ class User < CouchRest::ExtendedDocument
 
     def avatar_s
         self.read_attachment @@avatar_s_att_name
+    end
+
+    def has_role?(role)
+        return self.roles.include? role
+    end
+
+    def in_group?(val)
+        if val.instance_of? Array then
+            val.each do |group|
+                return true if self.groups.include? group
+            end
+        end
+        return self.groups.include? val
     end
 
 end

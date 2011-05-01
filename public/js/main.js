@@ -502,14 +502,18 @@ function ThreadUI(delegate)
 
 function BoardUI(delegate) 
 {
+    var odd=true;
+
     $('#view').children().remove();
     $('#view').append('<div id="thread-list"></div>');
     $('#thread-list').append('<div id="thread-list-toolbar"></div>');
-    $('#thread-list-toolbar').append($( '<button id="new-thread-button"><img src="images/newthread.png"> Create a new thread</button>' ).button());
+    $('#thread-list-toolbar').append(
+        $( '<button id="new-thread-button"><img src="images/newthread.png"> Create a new thread</button>' 
+    ).button().click(function() {
+        showPost(delegate.currentBoard);
+    }));
     $('#thread-list').append('<table id="thread-table"></table>');
     $('#thread-table').append('<thead><th class="subject">Subject</th><th>Replies</th><th>Last Post By</th></thead><tbody></tbody>');
-
-    var odd=true;;
 
     this.addThread = function (thread) {
 
@@ -537,6 +541,64 @@ function BoardUI(delegate)
         $('#thread-list').text('No threads have been posted to this board');
     }
 
+    this.removeAllThreads = function() {
+        $('#thread-table tbody tr').remove();
+    }
+
+    function postCallback (req) {
+        if (req.status == 200) {
+            $( '#post-dialog' ).remove();
+            delegate.reloadCurrentBoard();
+        } else if (req.status == 403) {
+            $('#post-form')
+                .before('<div class="error" id="reply-form-error">You are not permitted to post here</div>');
+        } else if (req.status == 404) {
+            $('#reply-form')
+                .before('<div class="error" id="reply-form-error">The board you are posting to no longer exists</div>');
+        } else {
+            $('#reply-form')
+                .before('<div class="error" id="reply-form-error">An error occurred creating this thread</div>');
+        }
+    }
+
+    function showPost(board_id) {
+        if ($('#post-dialog').length != 0 ) {
+            return false;
+        }
+        var editor;
+        $('<div id="post-dialog">').load("panels/post.html", function () {
+            editor = $('#post-body-field').cleditor({
+                width: "100%", height: "80%", 
+                controls: "bold italic underline strikethrough | " +
+                    "| bullets numbering " + "| undo redo | " +
+                    "rule image link unlink | source",})[0];
+        }).dialog( {
+            resizable: true, 
+            width: 640, 
+            title: 'Create a New Thread',
+            close: function() { $( this ).remove(); },
+            buttons: {
+                "Post": function() {
+                    editor.updateTextArea();
+                    $('#post-dialog div.error').remove();
+                    $.ajax( {
+                        url: 'board/'+encodeURIComponent(board_id)+'/post',
+                        data: { 
+                            subject: $('#post-subject-field').val(),
+                            body: $('#post-body-field').val(),
+                            board: board_id
+                        },
+                        type: 'POST',
+                        complete: postCallback,
+                    } );
+                },
+                "Cancel": function() {
+                    $( this ).remove();
+                }
+            }
+        } );
+    }
+
     this.destroy = function() { }
 }
 
@@ -544,10 +606,9 @@ function Converse()
 {
     var me = this;
     var view;
-    var currentThread;
 
     this.reloadCurrentThread = function() {
-        me.loadPost(currentThread);
+        me.loadPost(me.currentThread);
     }
 
     this.loadPost = function (post_id) {
@@ -570,6 +631,11 @@ function Converse()
             success: modelCallback
         };
         $.ajax(options);
+    }
+
+    this.reloadCurrentBoard = function() {
+        view.removeAllThreads();
+        me.loadBoard(me.currentBoard);
     }
 
     this.loadBoard = function (board_id) {
@@ -598,7 +664,7 @@ function Converse()
     this.viewThread = function(root_id) {
         if (!root_id) root_id = "38bd0a3ccf69621c9695281050000ab2";
 
-        currentThread = root_id;
+        me.currentThread = root_id;
         // pass self to threadui as delegate
         me.setView(new ThreadUI(me));
         me.loadPost(root_id);
@@ -607,7 +673,7 @@ function Converse()
     this.viewBoard = function(board_id) {
         if (!board_id) board_id = 'main';
 
-        currentBoard = board_id;
+        me.currentBoard = board_id;
         // pass self to threadui as delegate
         me.setView(new BoardUI(me));
         me.loadBoard(board_id);

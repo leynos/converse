@@ -21,6 +21,7 @@ class Post < CouchRest::ExtendedDocument
     property :author
     property :path,     [String]
     property :body
+    property :board
 
     view_by  :author, :date
 

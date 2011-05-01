@@ -21,6 +21,7 @@ require 'image_size'
 
 require './user'
 require './post'
+require './board'
 require './postController'
 
 db_url = if ENV['CLOUDANT_URL'] then 
@@ -34,6 +35,7 @@ CouchRest::Document::use_database DB
 
 Post.save_design_doc!
 User.save_design_doc!
+Board.save_design_doc!
 
 controller = PostController.new()
 logger = Logger.new(STDERR)
@@ -44,9 +46,13 @@ enable :sessions
 
 helpers do
     def not_loggedin_e(msg='You are not logged in') [403, msg] end
+    def user_not_found_e(msg='The specified user does not exist') [404, msg] end
+    def user_db_e(msg='Error retrieving user from database') [500, msg] end
+    def board_db_e(msg='Error retrieving board from database') [500, msg] end
+    def board_not_found_e(msg='The specified board does not exist') [404, msg] end
     def loggedin?() session[:loggedin] end
     def username?(u) session[:username]==u end
-    def yes_or_true?(v) v=='yes' or v=='true' end
+    def yes_or_true?(v) not v.nil? and ((v.casecmp 'yes')==0 or (v.casecmp 'true')==0) end
 end
 
 get '/' do
@@ -84,7 +90,7 @@ get %r{/user/([^/]*)/avatar(/small)?} do |username, small|
 
     user = User.for_username username
     if user.nil? then
-        break [404, 'The specified user does not exists']
+        return [404, 'The specified user does not exists']
     end
 
     unless user.has_avatar? then
@@ -93,7 +99,7 @@ get %r{/user/([^/]*)/avatar(/small)?} do |username, small|
         else
             redirect '/images/no_avatar.png'
         end
-        break
+        return
     end
 
     if small then
@@ -108,25 +114,25 @@ get %r{/user/([^/]*)/avatar(/small)?} do |username, small|
     avatar
 end
 
-# Upload a new avatar for the currently logged in used
+# Upload a new avatar for the currently logged in user
 post '/avatar' do
 
     return not_loggedin_e unless loggedin?
 
     unless params[:file] && (tmpfile = params[:file][:tempfile]) then
-        break [400, 'A file must be supplied with this request']
+        return [400, 'A file must be supplied with this request']
     end
 
     username = session[:username]
     user = User.for_username username
     if user.nil? then
-        break [404, 'The specified user does not exists']
+        return [404, 'The specified user does not exists']
     end
 
     max_size = [128, 128]
     imageSize = ImageSize.new(File.new(tmpfile.path))
     if (imageSize.width > max_size[0] || imageSize.height > max_size[1]) then
-        break [400, {
+        return [400, {
             :error => :image_too_large,
             :max_size => max_size
         }.to_json]
@@ -134,7 +140,7 @@ post '/avatar' do
 
     max_bytes = 40960
     if tmpfile.size > max_bytes then
-        break [400, {
+        return [400, {
             :error => :file_too_large,
             :max_bytes => max_bytes
         }.to_json]
@@ -149,12 +155,89 @@ get '/board' do
 end
 
 get '/board/:board_id' do
+    board = Board.for_name params[:board_id]
+    return board_not_found_e if board.nil?
+
+    user = User.for_name session[:username]
+    return user_db_e if user.nil?
+
     threads = controller.threads params[:board_id]
-    return 404 if threads.nil?
+
     content_type :json
     {
+        :title => board.title,
+        :description => board.description,
+        :may_post => board.user_may_post? user,
         :threads => threads
     }.to_json
+end
+
+put '/board/:board_id' do
+    
+    return not_loggedin_e unless loggedin?
+
+    user = User.for_name session[:username]
+    return user_db_e if user.nil?
+    return 403 unless user.has_role? :admin
+    old_board = board.for_name params[:board_id]
+    unless old_board.nil? then
+        return [409, 'A board with that name already exists']
+    end
+
+    board = Board.new(
+        :name => params[:board_id],
+        :title => params[:title],
+        :description => params[:description],
+        :owners => [user.username],
+        :status => 
+            if Board.permitted_status? params[:status] then 
+                params[:status] 
+            else 
+                :open 
+            end,
+        :groups => [],
+        :private => params[:private]?true:false,
+        :moderated => params[:moderated]?true:false
+    )
+    board.save!
+
+end
+
+delete '/board/:board_id' do
+    
+    return not_loggedin_e unless loggedin?
+
+    user = User.for_name session[:username]
+    return user_db_e if user.nil?
+    return 403 unless user.has_role? :admin
+    board = board.for_name params[:board_id]
+    unless board.nil? then
+        return 404
+    end
+    board.destroy unless board.nil?
+end
+
+post '/board/:board_id/post' do
+
+    return not_loggedin_e unless loggedin?
+
+    board = Board.for_name params[:board_id]
+    return board_not_found_e if board.nil?
+
+    user = User.for_username session[:username]
+    return user_db_e if user.nil?
+    unless board.user_may_post? user
+        return 403
+    end
+
+    post = Post.new(
+        :subject => params[:subject], 
+        :body => params[:body], 
+        :author => session[:username],
+        :board => params[:board_id],
+        :date => Time.now
+    )
+    post.save!
 end
 
 post '/post/:post_id/reply' do 
@@ -165,13 +248,23 @@ post '/post/:post_id/reply' do
     parent = Post.for_id post_id
 
     if parent.nil? then
-        break [404, 'The post to which you are replying does not exists']
+        return [404, 'The post to which you are replying does not exists']
+    end
+
+    board = Board.for_name parent.board
+    return board_db_e if board.nil?
+    user = User.for_username session[:username]
+    return user_db_e if user.nil?
+
+    unless board.user_may_post? user
+        return 403
     end
 
     post = Post.new(
         :subject => params[:subject], 
         :body => params[:body], 
         :author => session[:username],
+        :board => parent.board,
         :date => Time.now
     )
     post.setParent(parent)
@@ -207,7 +300,7 @@ end
 delete '/post/:post_id' do
 
     return not_loggedin_e unless loggedin?
-#
+
 #    if yes_or_true? params[:recursive] then
 #        result = Post.by_ancestor :startkey => [post_id], :endkey => [post_id, {}]
 #    else
@@ -215,7 +308,7 @@ delete '/post/:post_id' do
 #    end
 #
 #    if result.empty? then
-#        break [404, "The post you wish to delete no longer exists"]
+#        return [404, "The post you wish to delete no longer exists"]
 #    end
 #
 #    result.each do |post|
@@ -237,22 +330,19 @@ get '/loggedin' do
     content_type :json
     if loggedin? then
         user = User.for_username username
-        if user.nil? then
-            return [500, "Could not retrieve user details from database"]
-        end
-
+        return user_db_e if user.nil?
         {
             :loggedin => true,
             :username => username,
             # These are placeholder rights until this is supported
-            :rights => [:post, :reply, :manage_users],
+            :rights => user.roles
         }.to_json
     else
         {   
             :loggedin => false,
             :username => nil,
             # These are placeholder rights until this is supported
-            :rights => [:manage_users],
+            :rights => [],
         }.to_json
     end
 end
