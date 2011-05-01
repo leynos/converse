@@ -685,7 +685,7 @@ function toolbarButton(id, image, caption, onclick)
 {
     var button = $('<div />', {
         id: id,
-        class: 'toolbar-button'
+        'class': 'toolbar-button'
     });
     if (image) {
         button.append('<img src="'+image+'" /><br />');
