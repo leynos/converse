@@ -267,7 +267,7 @@
 		// See the constructor comment for details
 		var _allOrNothing = true;
 		var _handleOverlappingCodes = false;
-		var _escapeContentOutput = true;
+		var _escapeContentOutput = false;
 		var _codeStartSymbol = '[';
 		var _codeEndSymbol = ']';
 

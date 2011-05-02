@@ -271,7 +271,7 @@ function ThreadUI(delegate)
         if (null !== post.body)
         {
             try {
-                div.html(parser.format(post.body));
+                div.html(parser.format(htmlSpecialChars(post.body)));
             } catch (err) {
                 window.alert(err);
             }

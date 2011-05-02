@@ -53,6 +53,9 @@ helpers do
     def loggedin?() session[:loggedin] end
     def username?(u) session[:username]==u end
     def yes_or_true?(v) not v.nil? and ((v.casecmp 'yes')==0 or (v.casecmp 'true')==0) end
+    def request_headers
+        env.inject({}){|acc, (k,v)| acc[$1.downcase] = v if k =~ /^http_(.*)/i; acc}
+    end
 end
 
 get '/' do
@@ -92,6 +95,8 @@ get %r{/user/([^/]*)/avatar(/small)?} do |username, small|
     if user.nil? then
         return [404, 'The specified user does not exists']
     end
+
+    logger.info request_headers.inspect
 
     unless user.has_avatar? then
         if small
