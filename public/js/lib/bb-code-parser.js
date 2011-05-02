@@ -109,10 +109,10 @@
 		// Whether or not the actual display name of a code is a valid parent for this code
 		// The "actual display name" is 'ul' or 'ol', not "Unordered List", etc.
 		// If the code isn't nested, 'GLOBAL' will be passed instead
-		this.isValidParent = function(settings, parent/*=null*/) {};
+		this.isValidParent = function(settings, prnt/*=null*/) {};
 		// Escape content that will eventually be sent to the format function
 		// Take care not to escape the content again inside the format function
-		this.escape = function(settings, content) {};
+		this.escp = function(settings, content) {};
 		// Returns a statement indicating the opening of something which contains content
 		// (whatever that is in the output format/language returned)
 		// argument is the part after the equals in some BB-Codes, ex: [url=http://example.org]...[/url]
@@ -426,9 +426,9 @@
 
 						// Check for codes with no implementation and codes which aren't allowed
 						if(!BBCodeParser.isValidKey(codes, codeDisplayName)) {
-							queue[PHPC.count(queue) - 1].status = BBCodeParser_Token.NOIMPLFOUND;
+							queue[PHPC.count(queue) - 1].stat = BBCodeParser_Token.NOIMPLFOUND;
 						} else if(!PHPC.in_array(codeDisplayName, allowedCodes)) {
-							queue[PHPC.count(queue) - 1].status = BBCodeParser_Token.NOTALLOWED;
+							queue[PHPC.count(queue) - 1].stat = BBCodeParser_Token.NOTALLOWED;
 						}
 
 					} else if(code === '') {
@@ -450,14 +450,14 @@
 					var token = queue[i];
 
 					// Handle undetermined and valid codes
-					if(token.status !== BBCodeParser_Token.NOIMPLFOUND && token.status !== BBCodeParser_Token.NOTALLOWED) {
+					if(token.stat !== BBCodeParser_Token.NOIMPLFOUND && token.stat !== BBCodeParser_Token.NOTALLOWED) {
 
 						// Handle start and end codes
 						if(token.type === BBCodeParser_Token.CODE_START) {
 
 							// Start codes which don't need an end are valid
 							if(!codes[token.content].needsEnd()) {
-								token.status = BBCodeParser_Token.VALID;
+								token.stat = BBCodeParser_Token.VALID;
 							}
 
 						} else if(token.type === BBCodeParser_Token.CODE_END) {
@@ -467,7 +467,7 @@
 							// the start code is valid (and this-contained) we'll turn them into regular content
 							if(!codes[content].needsEnd()) {
 								token.type = BBCodeParser_Token.CONTENT;
-								token.status = BBCodeParser_Token.VALID;
+								token.stat = BBCodeParser_Token.VALID;
 							} else {
 
 								// Try our best to handle overlapping codes (they are a real PITA)
@@ -480,11 +480,11 @@
 
 								// Handle valid end codes, mark others invalid
 								if(start === false || queue[start].content !== content) {
-									token.status = BBCodeParser_Token.INVALID;
+									token.stat = BBCodeParser_Token.INVALID;
 								} else {
-									token.status = BBCodeParser_Token.VALID;
+									token.stat = BBCodeParser_Token.VALID;
 									token.matches = start;
-									queue[start].status = BBCodeParser_Token.VALID;
+									queue[start].stat = BBCodeParser_Token.VALID;
 									queue[start].matches = i;
 								}
 							}
@@ -492,7 +492,7 @@
 					}
 
 					// If all or nothing, just return the input (as we found 1 invalid code)
-					if(allOrNothing && token.status === BBCodeParser_Token.INVALID) {
+					if(allOrNothing && token.stat === BBCodeParser_Token.INVALID) {
 						return input;
 					}
 				}
@@ -506,38 +506,38 @@
 
 					// Escape content tokens via their parent's escaping function
 					if(token.type === BBCodeParser_Token.CONTENT) {
-						parent = state__findStartCodeWithStatus(queue, BBCodeParser_Token.VALID, i);
-						output += (!escapeContentOutput)? token.content : (parent === false || !BBCodeParser.isValidKey(codes, queue[parent].content))? codes['GLOBAL'].escape(settings, token.content) : codes[queue[parent].content].escape(settings, token.content);
+						prnt = state__findStartCodeWithStatus(queue, BBCodeParser_Token.VALID, i);
+						output += (!escapeContentOutput)? token.content : (prnt === false || !BBCodeParser.isValidKey(codes, queue[prnt].content))? codes['GLOBAL'].escp(settings, token.content) : codes[queue[prnt].content].escp(settings, token.content);
 
 					// Handle start codes
 					} else if(token.type === BBCodeParser_Token.CODE_START) {
-						parent = null;
+						prnt = null;
 
 						// If undetermined or currently valid, validate against various codes rules
-						if(token.status !== BBCodeParser_Token.NOIMPLFOUND && token.status !== BBCodeParser_Token.NOTALLOWED) {
-							parent = state__findParentStartCode(queue, i);
+						if(token.stat !== BBCodeParser_Token.NOIMPLFOUND && token.stat !== BBCodeParser_Token.NOTALLOWED) {
+							prnt = state__findParentStartCode(queue, i);
 
-							if((token.status === BBCodeParser_Token.UNDETERMINED && codes[token.content].needsEnd()) ||
+							if((token.stat === BBCodeParser_Token.UNDETERMINED && codes[token.content].needsEnd()) ||
 							   (codes[token.content].canHaveArgument() && !codes[token.content].isValidArgument(settings, token.argument)) || 
 							   (!codes[token.content].canHaveArgument() && token.argument) ||
 							   (codes[token.content].mustHaveArgument() && !token.argument) ||
-							   (parent !== false && !codes[queue[parent].content].canHaveCodeContent())) {
+							   (prnt !== false && !codes[queue[prnt].content].canHaveCodeContent())) {
 
-								token.status = BBCodeParser_Token.INVALID;
+								token.stat = BBCodeParser_Token.INVALID;
 								// Both tokens in the pair should be marked
 								if(token.matches) {
-									queue[token.matches].status = BBCodeParser_Token.INVALID;
+									queue[token.matches].stat = BBCodeParser_Token.INVALID;
 								}
 
 								// AllOrNothing, return input
 								if(allOrNothing) return input;
 							}
 
-							parent = (parent === false)? 'GLOBAL' : queue[parent].content;
+							prnt = (prnt === false)? 'GLOBAL' : queue[prnt].content;
 						}
 
 						// Check the parent code too ... some codes are only used within other codes
-						if(token.status === BBCodeParser_Token.VALID && codes[token.content].isValidParent(settings, parent)) {
+						if(token.stat === BBCodeParser_Token.VALID && codes[token.content].isValidParent(settings, prnt)) {
 							output += codes[token.content].open(settings, token.argument);
 
 							// Store all open codes
@@ -551,7 +551,7 @@
 					// Handle end codes
 					} else if(token.type === BBCodeParser_Token.CODE_END) {
 
-						if(token.status === BBCodeParser_Token.VALID) {
+						if(token.stat === BBCodeParser_Token.VALID) {
 							var content = token.content.substr(1);
 
 							// Remove the closing code, close all open codes
@@ -587,19 +587,19 @@
 					}
 				}
 			} else {
-				output += (!escapeContentOutput)? input : codes['GLOBAL'].escape(settings, input);
+				output += (!escapeContentOutput)? input : codes['GLOBAL'].escp(settings, input);
 			}
 
 			return output;
 		};
 
 		// Finds the closest parent with a certain status to the given position, working backwards
-		function state__findStartCodeWithStatus(queue, status, position) {
+		function state__findStartCodeWithStatus(queue, stat, position) {
 			var found = false;
 			var index = -1;
 
 			for(var i = position - 1; i >= 0 && !found; i--) {
-				found = queue[i].type === BBCodeParser_Token.CODE_START && queue[i].status === status;
+				found = queue[i].type === BBCodeParser_Token.CODE_START && queue[i].stat === stat;
 				index = i;
 			}
 
@@ -613,7 +613,7 @@
 
 			for(var i = position - 1; i >= 0 && !found; i--) {
 				found = queue[i].type === BBCodeParser_Token.CODE_START &&
-				        queue[i].status === BBCodeParser_Token.UNDETERMINED &&
+				        queue[i].stat === BBCodeParser_Token.UNDETERMINED &&
 					queue[i].content === content;
 				index = i;
 			}
@@ -628,7 +628,7 @@
 
 			for(var i = position - 1; i >= 0 && !found; i--) {
 				found = queue[i].type === BBCodeParser_Token.CODE_START &&
-				        queue[i].status === BBCodeParser_Token.VALID &&
+				        queue[i].stat === BBCodeParser_Token.VALID &&
 					queue[i].matches > position;
 				index = i;
 			}
@@ -711,7 +711,7 @@
 	function BBCodeParser_Token(type, content, argument) {
 
 		this.type = BBCodeParser_Token.NONE;
-		this.status = BBCodeParser_Token.UNDETERMINED;
+		this.stat = BBCodeParser_Token.UNDETERMINED;
 		this.content = '';
 		this.argument = null;
 		this.matches = null; // matching start/end code index
@@ -719,7 +719,7 @@
 		if(argument === undefined) argument = null;
 		this.type = type;
 		this.content = content;
-		this.status = (this.type === BBCodeParser_Token.CONTENT)? BBCodeParser_Token.VALID : BBCodeParser_Token.UNDETERMINED;
+		this.stat = (this.type === BBCodeParser_Token.CONTENT)? BBCodeParser_Token.VALID : BBCodeParser_Token.UNDETERMINED;
 		this.argument = argument;
 
 	}
@@ -744,8 +744,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return false; }
-		this.isValidParent = function(settings, parent) { return false; }
-		this.escape = function(settings, content) { return content; }
+		this.isValidParent = function(settings, prnt) { return false; }
+		this.escp = function(settings, content) { return content; }
 		this.open = function(settings, argument, closingCode) { return ''; }
 		this.close = function(settings, argument, closingCode) { return ''; }
 	}
@@ -765,8 +765,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return false; }
-		this.isValidParent = function(settings, parent) { return false; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return false; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) { return ''; }
 		this.close = function(settings, argument, closingCode) { return ''; }
 	}
@@ -782,8 +782,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return false; }
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) { return '<b>'; }
 		this.close = function(settings, argument, closingCode) { return '</b>'; }
 	}
@@ -799,8 +799,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return false; }
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) { return '<i>'; }
 		this.close = function(settings, argument, closingCode) { return '</i>'; }
 	}
@@ -816,8 +816,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return false; }
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) { return '<u>'; }
 		this.close = function(settings, argument, closingCode) { return '</u>'; }
 	}
@@ -833,8 +833,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return false; }
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) { return '<s>'; }
 		this.close = function(settings, argument, closingCode) { return '</s>'; }
 	}
@@ -849,8 +849,8 @@
 		this.mustHaveArgument = function() { return true; }
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
-		this.isValidParent = function(settings, parent) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
 		this.isValidArgument = function(settings, argument) { return PHPC.intval(argument) > 0; }
 		this.isValidArgument = function(settings, argument) {
 			if(!BBCodeParser.isValidKey(settings, 'FontSizeMax') || PHPC.intval(settings['FontSizeMax']) <= 0) {
@@ -893,8 +893,8 @@
 			}
 			return false;
 		}
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) { 
 			return '<span style="color: ' + PHPC.htmlspecialchars(argument) + '">';
 		}
@@ -914,8 +914,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return argument !== null; }
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) { 
 			return '<span style="font-family: \'' + PHPC.htmlspecialchars(argument) + '\'">';
 		}
@@ -935,8 +935,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return false; }
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) {
 			if(closingCode === undefined) closingCode = null;
 			return (closingCode === null)? '<div style="display: block; text-align: left">' : '';
@@ -958,8 +958,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return false; }
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) {
 			if(closingCode === undefined) closingCode = null;
 			return (closingCode === null)? '<div style="display: block; text-align: center">' : '';
@@ -981,8 +981,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return false; }
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) {
 			if(closingCode === undefined) closingCode = null;
 			return (closingCode === null)? '<div style="display: block; text-align: right">' : '';
@@ -1004,8 +1004,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return true; }
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) {//1px solid gray
 			if(closingCode === undefined) closingCode = null;
 			if(closingCode === null) {
@@ -1037,8 +1037,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return true; }
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) {
 			if(closingCode === undefined) closingCode = null;
 			if(closingCode === null) {
@@ -1070,8 +1070,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return true; }
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) {
 			if(closingCode === undefined) closingCode = null;
 			if(closingCode === null) {
@@ -1103,8 +1103,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return true; }
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) {
 			var decoration = (settings['LinkUnderline'])? 'underline' : 'none';
 			return '<a style="text-decoration: ' + decoration + '; color: ' + PHPC.htmlspecialchars(settings['LinkColor']) + '" href="' + PHPC.htmlspecialchars(argument) + '">';
@@ -1129,8 +1129,8 @@
 			var args = argument.split('x');
 			return args.length === 2 && (args[0].match(/^[0-9]+$/)!=null) && (args[1].match(/^[0-9]+$/)!=null)
 		}
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) {
 			if(closingCode === undefined) closingCode = null;
 			return (closingCode === null)? '<img src="' : '';
@@ -1167,8 +1167,8 @@
 			if(argument === null || argument === undefined) return true;
 			return BBCodeParser.isValidKey(types, argument);
 		}
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) {
 			if(closingCode === undefined) closingCode = null;
 			if(closingCode === null) {
@@ -1212,8 +1212,8 @@
 			if(argument === null || argument === undefined) return true;
 			return BBCodeParser.isValidKey(types, argument);
 		}
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) {
 			if(closingCode === undefined) closingCode = null;
 			if(closingCode === null) {
@@ -1247,10 +1247,10 @@
 		this.getAutoCloseCodeOnOpen = function() { return null; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return false; }
-		this.isValidParent = function(settings, parent) {
-			return parent === 'ul' || parent === 'ol';
+		this.isValidParent = function(settings, prnt) {
+			return prnt === 'ul' || prnt === 'ol';
 		}
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) { return '<li>'; }
 		this.close = function(settings, argument, closingCode) { return '</li>'; }
 	}
@@ -1282,8 +1282,8 @@
 			return BBCodeParser.isValidKey(ol_types, argument) ||
 			       BBCodeParser.isValidKey(ul_types, argument);
 		}
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) {
 			if(closingCode === undefined) closingCode = null;
 			if(closingCode === null) {
@@ -1332,8 +1332,8 @@
 		this.getAutoCloseCodeOnOpen = function() { return '*'; }
 		this.getAutoCloseCodeOnClose = function() { return null; }
 		this.isValidArgument = function(settings, argument) { return false; }
-		this.isValidParent = function(settings, parent) { return true; }
-		this.escape = function(settings, content) { return PHPC.htmlspecialchars(content); }
+		this.isValidParent = function(settings, prnt) { return true; }
+		this.escp = function(settings, content) { return PHPC.htmlspecialchars(content); }
 		this.open = function(settings, argument, closingCode) { return '<li>'; }
 		this.close = function(settings, argument, closingCode) { return '</li>'; }
 	}

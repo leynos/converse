@@ -270,7 +270,11 @@ function ThreadUI(delegate)
         });
         if (null !== post.body)
         {
-            div.html(parser.format(post.body));
+            try {
+                div.html(parser.format(post.body));
+            } catch (err) {
+                window.alert(err);
+            }
         }
         var author_id = post.author;
         var author = users[author_id];
