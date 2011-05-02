@@ -134,7 +134,7 @@ function ThreadUI(delegate)
     $('#view').append('<div id="notepad"></div>');
     $('#view').append('<div id="messagepane"></div>');
 
-    var paper = new Raphael("notepad", 400, 300);
+    var paper = Raphael("notepad", 400, 300);
 
     var circles = {};
 
