@@ -20,21 +20,14 @@ GEM
     fastimage_resize (1.2.3)
       RubyInline (>= 3.8.2)
       fastimage (>= 1.2.0)
-    hoe (1.12.2)
-      rake (>= 0.8.4)
-      rubyforge (>= 1.0.3)
     i18n (0.5.0)
     image_size (1.0.3)
     json (1.5.1)
-    json_pure (1.5.1)
     mime-types (1.16)
     mimemagic (0.1.8)
     rack (1.2.1)
-    rake (0.8.7)
     rest-client (1.6.1)
       mime-types (>= 1.16)
-    rubyforge (2.0.4)
-      json_pure (>= 1.1.7)
     sinatra (1.1.2)
       rack (~> 1.1)
       tilt (~> 1.2)
@@ -48,7 +41,6 @@ DEPENDENCIES
   couchrest
   couchrest_extended_document
   fastimage_resize
-  hoe (< 2.0.0)
   i18n
   image_size
   mimemagic
