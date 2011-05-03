@@ -26,8 +26,9 @@ class User < CouchRest::ExtendedDocument
 
     property :username
     property :password
-    property :roles,        [String]
-    property :groups,       [String]
+    property :roles,            [String]
+    property :groups,           [String]
+    property :avatar_modified,  Time
 
     view_by  :username
 
@@ -66,6 +67,7 @@ class User < CouchRest::ExtendedDocument
         end
         self.create_attachment :file => file, :name => @@avatar_att_name
         self.avatar_s=file
+        self.avatar_modified = Time.now
     end
 
     def avatar_s=(file)

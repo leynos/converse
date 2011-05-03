@@ -117,10 +117,11 @@ Date.replaceChars = {
     // Full Date/Time
     c: function() { return this.format("Y-m-d\\TH:i:sP"); }, // Fixed now
     r: function() { return this.toString(); },
-    U: function() { return this.getTime() / 1000; }
+    U: function() { return this.getTime() / 1000; },
+    _: function() { return '&nbsp;'; }
 };
 
-var en_GB_datef = 'D&\\n\\b\\s\\p;jS&\\n\\b\\s\\p;M&\\n\\b\\s\\p;Y, g:iA';
+var en_GB_datef = 'D_jS_M_Y, g:iA';
 
 // Replace quotes with an appropriate escape sequence to allow 
 // placing text in a js event

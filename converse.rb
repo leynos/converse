@@ -111,6 +111,12 @@ get %r{/user/([^/]*)/avatar(/small)?} do |username, small|
         avatar = user.avatar
     end
 
+    if user.avatar_modified.nil? then
+        last_modified Time.utc(1970, 1, 1)
+    else
+        last_modified user.avatar_modified
+    end
+
     avatarIO = StringIO.new avatar
     mime = MimeMagic.by_magic avatarIO
     content_type mime.type
