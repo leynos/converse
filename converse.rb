@@ -45,12 +45,14 @@ logger.info "\033]0;Sinatra (Converse)\007"
 enable :sessions
 
 helpers do
-    def not_loggedin_e(msg='You are not logged in') [403, msg] end
-    def user_not_found_e(msg='The specified user does not exist') [404, msg] end
-    def user_db_e(msg='Error retrieving user from database') [500, msg] end
-    def board_db_e(msg='Error retrieving board from database') [500, msg] end
-    def board_not_found_e(msg='The specified board does not exist') [404, msg] end
+    def user_not_found_e(msg='The specified user does not exist') error 404, msg end
+    def user_db_e(msg='Error retrieving user from database') error 500, msg end
+    def board_db_e(msg='Error retrieving board from database') error 500, msg end
+    def board_not_found_e(msg='The specified board does not exist') error 404, msg end
     def loggedin?() session[:loggedin] end
+    def must_be_loggedin() 
+        if not loggedin? then error 403, 'You are not logged in' end
+    end
     def username?(u) session[:username]==u end
     def yes_or_true?(v) not v.nil? and ((v.casecmp 'yes')==0 or (v.casecmp 'true')==0) end
     def request_headers
@@ -65,9 +67,7 @@ end
 get '/user/:username' do
     username=params[:username]
     user = User.for_username username
-    if user.nil? then
-        return [404, 'No user by that name here']
-    end
+    user_not_found_e if user.nil?
     {
         :username => user.username,
         :displayname => user.displayname
@@ -84,7 +84,7 @@ put '/user/:username' do
     user = User.new
     user.username = username
     user.create_password password
-    logger.info "User created: #{username}, #{password}"
+    logger.info "User created: #{username}"
     user.create!
     201
 end
@@ -92,9 +92,7 @@ end
 get %r{/user/([^/]*)/avatar(/small)?} do |username, small|
 
     user = User.for_username username
-    if user.nil? then
-        return [404, 'The specified user does not exists']
-    end
+    user_not_found_e if user.nil?
 
     logger.info request_headers.inspect
 
@@ -122,7 +120,7 @@ end
 # Upload a new avatar for the currently logged in user
 post '/avatar' do
 
-    return not_loggedin_e unless loggedin?
+    must_be_loggedin
 
     unless params[:file] && (tmpfile = params[:file][:tempfile]) then
         return [400, 'A file must be supplied with this request']
@@ -130,9 +128,7 @@ post '/avatar' do
 
     username = session[:username]
     user = User.for_username username
-    if user.nil? then
-        return [404, 'The specified user does not exists']
-    end
+    user_not_found_e if user.nil?
 
     max_size = [128, 128]
     imageSize = ImageSize.new(File.new(tmpfile.path))
@@ -161,11 +157,13 @@ end
 
 get '/board/:board_id' do
     board = Board.for_name params[:board_id]
-    return board_not_found_e if board.nil?
+    board_not_found_e if board.nil?
 
+    may_post = false
     if loggedin? then
         user = User.for_username session[:username]
-        return user_db_e if user.nil?
+        user_db_e if user.nil?
+        may_post = board.user_may_post? user
     end
 
     threads = controller.threads params[:board_id]
@@ -174,22 +172,17 @@ get '/board/:board_id' do
     {
         :title => board.title,
         :description => board.description,
-        :may_post => 
-            if loggedin? then 
-                (board.user_may_post? user) 
-            else 
-                false 
-            end,
+        :may_post => may_post,
         :threads => threads
     }.to_json
 end
 
 put '/board/:board_id' do
     
-    return not_loggedin_e unless loggedin?
+    must_be_loggedin
 
     user = User.for_username session[:username]
-    return user_db_e if user.nil?
+    user_db_e if user.nil?
     return 403 unless user.has_role? :admin
     old_board = Board.for_name params[:board_id]
     unless old_board.nil? then
@@ -217,27 +210,25 @@ end
 
 delete '/board/:board_id' do
     
-    return not_loggedin_e unless loggedin?
+    must_be_loggedin
 
     user = User.for_username session[:username]
-    return user_db_e if user.nil?
+    user_db_e if user.nil?
     return 403 unless user.has_role? :admin
     board = board.for_name params[:board_id]
-    unless board.nil? then
-        return 404
-    end
+    board_not_found_e if board.nil?
     board.destroy unless board.nil?
 end
 
 post '/board/:board_id/post' do
 
-    return not_loggedin_e unless loggedin?
+    must_be_loggedin
 
     board = Board.for_name params[:board_id]
-    return board_not_found_e if board.nil?
+    board_not_found_e if board.nil?
 
     user = User.for_username session[:username]
-    return user_db_e if user.nil?
+    user_db_e if user.nil?
     unless board.user_may_post? user
         return 403
     end
@@ -254,7 +245,7 @@ end
 
 post '/post/:post_id/reply' do 
 
-    return not_loggedin_e unless loggedin?
+    must_be_loggedin
 
     post_id = params[:post_id]
     parent = Post.for_id post_id
@@ -264,9 +255,9 @@ post '/post/:post_id/reply' do
     end
 
     board = Board.for_name parent.board
-    return board_db_e if board.nil?
+    board_db_e if board.nil?
     user = User.for_username session[:username]
-    return user_db_e if user.nil?
+    user_db_e if user.nil?
 
     unless board.user_may_post? user
         return 403
@@ -285,20 +276,6 @@ post '/post/:post_id/reply' do
     200
 end
 
-post '/post' do 
-
-    return not_loggedin_e unless loggedin?
-
-    post = Post.new(
-        :subject => params[:subject], 
-        :body => params[:body], 
-        :author => session[:username],
-        :date => Time.now)
-    post.create!
-    
-    200
-end
-
 get '/post/:post_id' do
     content_type :json
     post_id = params[:post_id]
@@ -311,7 +288,7 @@ end
 
 delete '/post/:post_id' do
 
-    return not_loggedin_e unless loggedin?
+    must_be_loggedin
 
 #    if yes_or_true? params[:recursive] then
 #        result = Post.by_ancestor :startkey => [post_id], :endkey => [post_id, {}]
@@ -342,7 +319,7 @@ get '/loggedin' do
     content_type :json
     if loggedin? then
         user = User.for_username username
-        return user_db_e if user.nil?
+        user_db_e if user.nil?
         {
             :loggedin => true,
             :username => username,
