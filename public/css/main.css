@@ -23,7 +23,7 @@ div.message-cell > h3 {
     margin: 0 0 0 0;
     padding: 0 0 0 0;
 }
-div.message-cell .date {
+div.message-cell > .date {
     float: right;
     font-size: 80%;
     vertical-align:text-bottom;

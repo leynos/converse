@@ -211,6 +211,7 @@ function ThreadUI(delegate)
     var paper = Raphael("notepad", 400, 300);
 
     var circles = {};
+    var qtips = {};
 
     var selection;
 
@@ -235,6 +236,7 @@ function ThreadUI(delegate)
             cy = c.attr("cy");
             selection = paper.circle(cx, cy, mul*0.2);
             selection.attr("fill", "black");
+            $(selection.node).qtip(qtips[id]);
         }
 
         // Scroll to the post in the message pane
@@ -265,8 +267,8 @@ function ThreadUI(delegate)
         circles[id] = c;
         c.attr("fill", "white");
         c.node.onclick = onclick;
-        $(c.node).qtip({
-            content: 'id: '+post.id+'<br />author: '+users[post.author].displayname+'<br />date: '+postDate.format(en_GB_datef),
+        qtips[id] = {
+            content: 'Author: '+users[post.author].displayname+'<br />Date: '+postDate.format(en_GB_datef),
             show: 'mouseover',
             hide: 'mouseout',
             position: {
@@ -276,7 +278,8 @@ function ThreadUI(delegate)
                     tooltip: 'leftTop'
                 }
             }
-        });
+        };
+        $(c.node).qtip(qtips[id]);
         
         var i=0;
         var count=1;
