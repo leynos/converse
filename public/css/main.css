@@ -27,6 +27,7 @@ div.message-cell > .date {
     float: right;
     font-size: 80%;
     vertical-align:text-bottom;
+    padding-right: 8px;
 }
 div.message-toolbar {
     position: absolute;
