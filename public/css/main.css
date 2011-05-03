@@ -9,7 +9,6 @@ body {
     max-width: 900px;
     min-width: 300px;
     margin-bottom: 8px;
-    height: 400px;
     overflow: auto;
 }
 div.message-cell {
@@ -24,6 +23,11 @@ div.message-cell > h3 {
     margin: 0 0 0 0;
     padding: 0 0 0 0;
 }
+div.message-cell .date {
+    float: right;
+    font-size: 80%;
+    vertical-align:text-bottom;
+}
 div.message-toolbar {
     position: absolute;
     bottom: 2px;
@@ -37,7 +41,6 @@ img.avatar {
     margin-right: 4px;
 }
 div#notepad {
-    height: 30%;
     width: 100%;
     background: white;
     overflow: hidden;
@@ -49,7 +52,7 @@ div#toolbar {
     right: 30px;
 }
 .caption {
-    font-size: 8;
+    font-size: 50%;
 }
 .toolbar-button {
     text-align: center;
@@ -152,7 +155,7 @@ tbody th, tbody td {
 th.subject {
     min-width: 400px;
     max-width: 800px;
-    width: 60%;
+    width: 50%;
 }
 
 #post-subject-field {
