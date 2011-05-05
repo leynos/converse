@@ -17,7 +17,7 @@ require 'couchrest_extended_document'
 class Post < CouchRest::ExtendedDocument
 
     property :subject,  String
-    property :date,     Time
+    property :date,     DateTime
     property :author
     property :path,     [String]
     property :body
@@ -81,7 +81,8 @@ class Post < CouchRest::ExtendedDocument
                         sum[4] = k[0][2];
                         sum[5] = doc.subject;
                     }
-                    // if this is the newest reply (or post), capture the date and author
+                    // if this is the newest reply (or post), 
+                    // capture the date and author
                     if (k[0][2] > sum[0])
                     {
                         sum[0] = k[0][2];

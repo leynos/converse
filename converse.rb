@@ -45,19 +45,37 @@ logger.info "\033]0;Sinatra (Converse)\007"
 enable :sessions
 
 helpers do
-    def user_not_found_e(msg='The specified user does not exist') error 404, msg end
-    def user_db_e(msg='Error retrieving user from database') error 500, msg end
-    def board_db_e(msg='Error retrieving board from database') error 500, msg end
-    def board_not_found_e(msg='The specified board does not exist') error 404, msg end
+    def user_not_found_e(msg='The specified user does not exist') 
+        error 404, msg end
+    def user_db_e(msg='Error retrieving user from database') 
+        error 500, msg end
+    def board_db_e(msg='Error retrieving board from database') 
+        error 500, msg end
+    def board_not_found_e(msg='The specified board does not exist') 
+        error 404, msg end
     def loggedin?() session[:loggedin] end
+    def username?(u) session[:username]==u end
+    def yes_or_true?(v) not v.nil? and 
+        ((v.casecmp 'yes')==0 or (v.casecmp 'true')==0) end
+    def request_headers
+        env.inject({}) do 
+            |acc, (k,v)| acc[$1.downcase] = v if k =~ /^http_(.*)/i; acc 
+        end
+    end
+
     def must_be_loggedin() 
         if not loggedin? then error 403, 'You are not logged in' end
     end
-    def username?(u) session[:username]==u end
-    def yes_or_true?(v) not v.nil? and ((v.casecmp 'yes')==0 or (v.casecmp 'true')==0) end
-    def request_headers
-        env.inject({}){|acc, (k,v)| acc[$1.downcase] = v if k =~ /^http_(.*)/i; acc}
+
+    def must_have_waited(atleast, secs)
+        if secs < 20 then
+            halt [400, {
+                :error => :slow_down,
+                :wait_atleast => 20
+            }.to_json]
+        end
     end
+
 end
 
 get '/' do
@@ -93,8 +111,6 @@ get %r{/user/([^/]*)/avatar(/small)?} do |username, small|
 
     user = User.for_username username
     user_not_found_e if user.nil?
-
-    logger.info request_headers.inspect
 
     unless user.has_avatar? then
         if small
@@ -235,18 +251,21 @@ post '/board/:board_id/post' do
 
     user = User.for_username session[:username]
     user_db_e if user.nil?
+
+    must_have_waited 20, controller.secs_ago_posted(user)
+
     unless board.user_may_post? user
-        return 403
+        error 403, 'You may not post here'
     end
 
-    post = Post.new(
+    controller.post(
         :subject => params[:subject], 
         :body => params[:body], 
         :author => session[:username],
-        :board => params[:board_id],
-        :date => Time.now
+        :board => params[:board_id]
     )
-    post.save!
+
+    200
 end
 
 post '/post/:post_id/reply' do 
@@ -257,7 +276,7 @@ post '/post/:post_id/reply' do
     parent = Post.for_id post_id
 
     if parent.nil? then
-        return [404, 'The post to which you are replying does not exists']
+        not_found 'The post to which you are replying does not exists'
     end
 
     board = Board.for_name parent.board
@@ -265,19 +284,18 @@ post '/post/:post_id/reply' do
     user = User.for_username session[:username]
     user_db_e if user.nil?
 
-    unless board.user_may_post? user
-        return 403
+    must_have_waited 20, controller.secs_ago_posted(user)
+
+    unless board.user_may_post? user, true
+        error 403, 'You may not post here'
     end
 
-    post = Post.new(
+    controller.post(
         :subject => params[:subject], 
         :body => params[:body], 
         :author => session[:username],
-        :board => parent.board,
-        :date => Time.now
+        :parent => parent
     )
-    post.set_parent(parent)
-    post.create!
     
     200
 end
@@ -377,4 +395,11 @@ post '/logout' do
         # These are placeholder rights until this is supported
         :rights => [:manage_users],
     }.to_json
+end
+
+require './dbRepair.rb'
+
+get '/dbrepair' do
+    content_type 'text/plain'
+    db_repair
 end

@@ -12,10 +12,16 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+require  './post.rb'
+require  './user.rb'
+
 class PostController
 
     @@logger = Logger.new(STDERR)
 
+    def initialize
+        @user_last_posted = {}
+    end
 
     def users_for_id(root_id)
         result = Post.by_first_ancestor :key => root_id, :reduce => true
@@ -133,6 +139,42 @@ class PostController
             })
         end                                                          
         return posts
+    end
+
+    # Return the number of seconds since the specified user last posted
+    # === Parameters
+    # * _user_ = a User object or a username String
+    def secs_ago_posted(user)
+        username = if user.is_a? User then user.username else user end
+        last_post = @user_last_posted[username]
+        if last_post.nil? then
+            result = Post.by_author_and_date :startkey => [username, {}], 
+                :endkey => [username] , :descending => true,  :limit => 1
+            return Time.now.to_f if result.empty?
+            last_post = result.first.date
+            return Time.now.to_f if last_post.nil?
+        end
+        Time.now - last_post.to_time
+    end
+
+    def post(params = {})
+
+        @user_last_posted[:username] = DateTime.now
+        post = Post.new(
+            :body => params[:body],
+            :author => params[:author],
+            :date => (params.key? :date) ? params[:date] : DateTime.now
+        )
+        post.subject = params[:subject] if params.key? :subject
+        if params.key? :parent then
+            parent=params[:parent]
+            post.set_parent parent
+            post.board = parent.board
+        elsif params.key? :board then
+            post.board = params[:board]
+        end
+        post.save!
+
     end
 
 end
