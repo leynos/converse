@@ -623,8 +623,8 @@ function BoardUI(delegate)
         newest.setISO8601(thread.newest);
         $('#thread-table > tbody').append(
             '<tr' + (odd?' class="odd"':'') + '><td><a href="#!thread/' + 
-            htmlSpecialChars(thread.id) + '">' +
-            htmlSpecialChars(thread.subject) + '</a></td><td>' + 
+            htmlSpecialChars(thread.id) + '"><div>' +
+            htmlSpecialChars(thread.subject) + '</div></a></td><td>' + 
             htmlSpecialChars(thread.replies) + '</td><td>' +
             htmlSpecialChars(thread.newest_by) + ' (' +
             newest.format(en_GB_datef) + ')</td></tr>');
