@@ -162,3 +162,7 @@ th.subject {
     width: 100%;
 }
 
+#post-dialogue {
+    min-height: 330;
+}
+

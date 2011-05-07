@@ -564,8 +564,13 @@ function ThreadUI(delegate)
         }).dialog( {
             resizable: true, 
             width: 640, 
+            minWidth: 640,
+            minHeight: 360,
             title: 'Post a Reply',
-            close: function() { $( this ).remove(); },
+            close: function() { 
+                $(window).unbind( '.cleditor' ); 
+                $( this ).remove();
+            },
             buttons: {
                 "Reply": function() {
                     editor.updateTextArea();
@@ -576,12 +581,18 @@ function ThreadUI(delegate)
                             body: $('#reply-body-field').val() 
                         },
                         type: 'POST',
-                        complete: replyCallback
+                        complete: replyCallback,
                     } );
                 },
                 "Cancel": function() {
-                    $( this ).remove();
+                    $( this ).dialog('close');
                 }
+            },
+            resize: function() {
+                var div = $(this);
+                var h = div.innerHeight()-32;
+                var p = editor.$main.position();
+                editor.$main.height(Math.floor(h-p['top']));
             }
         } );
     }
@@ -599,13 +610,8 @@ function ThreadUI(delegate)
         handles: 's'
     });
 
-    $(window).resize( function() {
-        me.handleResize();
-    });
-
-    $('#mappane').bind( "resize", function(event, ui) {
-        me.handleResize();
-    });
+    $(window).resize( me.handleResize );
+    $('#mappane').resize( me.handleResize );
     
     shortcut.add('a', function() {
         me.selectParent();
@@ -628,6 +634,7 @@ function ThreadUI(delegate)
         shortcut.remove('s');
         shortcut.remove('d');
         shortcut.remove('w');
+        $(window).unbind('resize', me.handleResize);
     };
 }
 
@@ -697,15 +704,20 @@ function BoardUI(delegate)
         var editor;
         $('<div id="post-dialog">').load("panels/post.html", function () {
             editor = $('#post-body-field').cleditor({
-                width: "100%", height: "80%", 
+                width: "100%",
                 controls: "bold italic underline strikethrough | " +
                     "| bullets numbering " + "| undo redo | " +
                     "rule image link unlink | source"})[0];
         }).dialog( {
             resizable: true, 
             width: 640, 
+            minHeight: 480,
+            minWidth: 640,
             title: 'Create a New Thread',
-            close: function() { $( this ).remove(); },
+            close: function() { 
+                $(window).unbind( '.cleditor' ); 
+                $( this ).remove();
+            },
             buttons: {
                 "Post": function() {
                     editor.updateTextArea();
@@ -722,10 +734,16 @@ function BoardUI(delegate)
                     } );
                 },
                 "Cancel": function() {
-                    $( this ).remove();
+                    $( this ).dialog('close');
                 }
+            },
+            resize: function() {
+                var div = $(this);
+                var h = div.innerHeight()-32;
+                var p = editor.$main.position();
+                editor.$main.height(Math.floor(h-p['top']));
             }
-        } );
+        });
     }
 
     this.destroy = function() { };
