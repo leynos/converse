@@ -591,7 +591,7 @@ function ThreadUI(delegate)
                             body: replyBody()
                         },
                         type: 'POST',
-                        complete: replyCallback,
+                        complete: replyCallback
                     } );
                 },
                 "Cancel": function() {
