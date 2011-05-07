@@ -555,6 +555,10 @@ function ThreadUI(delegate)
             return false;
         }
         var editor;
+        function replyBody() {
+            return $("<div/>").html(
+                $('#reply-body-field').val()).text();
+        }
         $('<div id="reply-dialog">').load("panels/reply.html", function () {
             editor = $('#reply-body-field').cleditor({
                 width: "100%", height: "80%", 
@@ -578,7 +582,7 @@ function ThreadUI(delegate)
                     $.ajax( {
                         url: 'post/'+encodeURIComponent(postId)+'/reply',
                         data: { 
-                            body: $('#reply-body-field').val() 
+                            body: replyBody()
                         },
                         type: 'POST',
                         complete: replyCallback,
@@ -701,6 +705,10 @@ function BoardUI(delegate)
         if ($('#post-dialog').length !== 0 ) {
             return false;
         }
+        function postBody() {
+            return $("<div/>").html(
+                $('#post-body-field').val()).text();
+        }
         var editor;
         $('<div id="post-dialog">').load("panels/post.html", function () {
             editor = $('#post-body-field').cleditor({
@@ -726,7 +734,7 @@ function BoardUI(delegate)
                         url: 'board/'+encodeURIComponent(board_id)+'/post',
                         data: { 
                             subject: $('#post-subject-field').val(),
-                            body: $('#post-body-field').val(),
+                            body: postBody(),
                             board: board_id
                         },
                         type: 'POST',
@@ -877,20 +885,31 @@ function showAddUser()
     if ($('#user-dialog').length !== 0 ) {
         return false;
     }
-    $('<div id="user-dialog">').load("panels/user.html").dialog( {
+    function doAddUser() {
+        $('#user-form-error').remove();
+        $.ajax( {
+            url: 'user/'+encodeURIComponent($('#user-username-field').val()), 
+            data: { password: $('#user-password-field').val() },
+            type: 'PUT',
+            complete: addUserCallback
+        } );
+    }
+    $('<div id="user-dialog">').load("panels/user.html", function() {
+        $('#user-form').keypress(function(e){
+            if ((e.which && e.which == 13) || (e.keyCode && e.keyCode == 13)) {
+                e.preventDefault();
+                doAddUser();
+            }
+        });
+        $('#user-username-field')[0].focus();
+    }).dialog( {
         resizable: false, 
         width: 350, 
         title: 'Create User',
         close: function() { $( this ).remove(); },
         buttons: {
-            "Create": function() {
-                $('#user-form-error').remove();
-                $.ajax( {
-                    url: 'user/'+encodeURIComponent($('#user-username-field').val()), 
-                    data: { password: $('#user-password-field').val() },
-                    type: 'PUT',
-                    complete: addUserCallback
-                } );
+            "Register": function() {
+                doAddUser();
             },
             "Cancel": function() {
                 $( this ).remove();
@@ -970,6 +989,7 @@ function showLogin()
                 doLogin();
             }
         });
+        $('#login-username-field')[0].focus();
     }).dialog( {
         resizable: false, 
         width: 350, 

@@ -158,7 +158,7 @@ th.subject {
     width: 50%;
 }
 
-#post-subject-field {
+input.full-width {
     width: 100%;
 }
 
