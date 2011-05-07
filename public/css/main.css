@@ -10,6 +10,7 @@ body {
     min-width: 300px;
     margin-bottom: 8px;
     overflow: auto;
+    margin-left: 64px;
 }
 div.message-cell {
     padding-top: 4px;
@@ -41,12 +42,6 @@ img.avatar {
     float: left;
     margin-right: 4px;
 }
-div#notepad {
-    width: 100%;
-    min-height: 100px;
-    background: white;
-    overflow: hidden;
-}
 div#toolbar {
     display: inline-block;
     position: fixed;
@@ -63,27 +58,30 @@ div#toolbar {
 #user-dialog {
     max-width: 600px;
 }
-#notepad > div.ui-resizable-s {
+#mappane {
+    min-height: 100px;
+}
+#mappane > div#notepad {
+    margin-left: 64px;
+    margin-right: 64px;
+    width: 100%;
+    background: white;
+    overflow: hidden;
+}
+#mappane > div.ui-resizable-handle {
     background-color: #DDD;
-    height: 10px;
-    background-image: url('images/resizev.png') 
-        -moz-linear-gradient(
+    /* height: 10px; */
+    background-image: 
+        url('../images/resizev.png');
+        /*-moz-linear-gradient(
             center bottom,
             rgb(245,245,245) 0%,
             rgb(173,173,173) 40%,
             rgb(237,237,237) 100%
-        );
+        );*/
     background-repeat: no-repeat;
     background-position: center top;
     z-index:1000;
-}
-
-#notepad > div.ui-resizable-s > div.knurl {
-    background-image:url('images/resizev.png');
-    background-repeat: no-repeat;
-    background-position: center top;
-    height: 100%;
-    width: 100%;
 }
 
 div.error {

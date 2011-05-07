@@ -144,8 +144,32 @@ function ThreadUI(delegate)
 
     var me = this;
 
+    // Threadmap dimensions
     var mul=20;
     var vmul=25;
+
+    // Raphael object for Threadmap
+    var paper;
+
+    // Threadmap elements
+    var selection;
+    var circles = {};
+    var qtips = {};
+
+    // Information displayed in the message pane
+    var postsHash = {};
+    var orderedPosts = [];
+    var users = {};
+
+    var parser = new BBCodeParser();
+
+    var selected_id;
+
+    // Style threadmap elements
+    function setPathAttrs(p) {
+        p.attr("stroke-width", mul/8);
+        p.attr("stroke", "gray");
+    }
 
     Raphael.fn.dash = function(x, y) {
         var x1=(x-0.5)*mul;
@@ -206,15 +230,29 @@ function ThreadUI(delegate)
 
     // Add the view components
     $('#view').children().remove();
-    $('#view').append('<div id="notepad"></div>');
+    $('#view').append('<div id="mappane"><div id="notepad" /></div>');
     $('#view').append('<div id="messagepane"></div>');
+    paper = Raphael("notepad", 400, 300);
 
-    var paper = Raphael("notepad", 400, 300);
-
-    var circles = {};
-    var qtips = {};
-
-    var selection;
+    var dragOrigin = {};
+    function notepadDrag(e) {
+        var dx = e.pageX - dragOrigin.x;
+        var dy = e.pageY - dragOrigin.y;
+        dragOrigin.x = e.pageX;
+        dragOrigin.y = e.pageY;
+        $(this).scrollTo({
+            'left':'-='+dx+'px', 
+            'top':'-='+dy+'px'
+        });
+    }
+    $('#notepad').mousedown( function(e) {
+        $(this).mousemove(notepadDrag);
+        dragOrigin.x = e.pageX;
+        dragOrigin.y = e.pageY;
+    });
+    $('#notepad').mouseup( function(e) {
+        $(this).unbind('mousemove', notepadDrag);
+    });
 
     // Select a post and draw the selection circle
     this.select = function(id) {
@@ -247,31 +285,29 @@ function ThreadUI(delegate)
         selected_id = id;
     };
 
-    var select = this.select;
-
-    function setPathAttrs(p) {
-        p.attr("stroke-width", mul/8);
-        p.attr("stroke", "gray");
-    }
-
     function drawTree(post, x, y) {
         if (!x) { x=1; }
         if (!y) { y=1; }
 
         var c = paper.circle(x*mul, y*vmul, mul*0.4);
         var id = post.id;
-        var onclick = function () {
-            select(id, paper);
-        };
         var postDate = new Date();
         postDate.setISO8601(post.date);
         circles[id] = c;
         c.attr("fill", "white");
-        c.node.onclick = onclick;
+        $(c.node).click(function(e) {
+            me.select(id, paper);
+        });
         qtips[id] = {
-            content: 'Author: '+users[post.author].displayname+'<br />Date: '+postDate.format(en_GB_datef),
+            content: '<b>'+users[post.author].displayname+'</b><br />'+postDate.format(en_GB_datef),
             show: 'mouseover',
             hide: 'mouseout',
+            style: {
+                border: { 
+                    width: 1,
+                    radius: 4 
+                }
+            },
             position: {
                 target: 'mouse', 
                 corner: {
@@ -317,11 +353,6 @@ function ThreadUI(delegate)
         drawTree(postsHash[post_id]);
     };
 
-    var postsHash = {};
-    var orderedPosts = [];
-    var users = {};
-    var parser = new BBCodeParser();
-
     this.addPost = function (post) {
         // Skip this post if we have it already
         // Layer, maybe update the body if needs be
@@ -346,7 +377,7 @@ function ThreadUI(delegate)
             'class': "message-cell"
         });
         div.dblclick(function(e) {
-            select(post.id, paper);
+            me.select(post.id, paper);
         });
 
         var postDate = new Date();
@@ -408,8 +439,6 @@ function ThreadUI(delegate)
         $.extend(users, data);
     };
 
-    var selected_id;
-
     function par(id) {
         return postsHash[id].prnt;
     }
@@ -417,7 +446,7 @@ function ThreadUI(delegate)
     this.selectParent = function () {
         var id=par(selected_id);
         if (id) {
-            select(id, paper);
+            me.select(id, paper);
         }
     };
 
@@ -428,7 +457,7 @@ function ThreadUI(delegate)
     this.selectFirstChild = function () {
         var id=firstChild(selected_id);
         if (id) {
-            select(id, paper);
+            me.select(id, paper);
         }
     };
 
@@ -462,7 +491,7 @@ function ThreadUI(delegate)
 
         var id=nextCousin(selected_id);
         if (id) {
-            select(id, paper);
+            me.select(id, paper);
         }
     };
 
@@ -495,13 +524,14 @@ function ThreadUI(delegate)
     this.selectPrevCousin = function () {
         var id=prevCousin(selected_id);
         if (id) {
-            select(id, paper);
+            me.select(id, paper);
         }
     };
 
     this.handleResize = function () {
-        $("#messagepane").height( $(window).height() - $("#notepad").outerHeight() -8 );
-        $("#notepad").width( $(window).width() - 16 );
+        $("#messagepane").height( $(window).height() - $("#mappane").outerHeight() -8 );
+        $("#notepad").height($("#mappane").height());
+        $("#mappane").width( $(window).width() - 16 );
     };
 
     function replyCallback (req) {
@@ -560,10 +590,11 @@ function ThreadUI(delegate)
         $("#messagepane").html("No post found! :o");
     };
 
-    $('#notepad').height($(window).height()*0.25);
-    $("#messagepane").height( $(window).height() - $("#notepad").outerHeight() -8 );
+    $('#mappane').height($(window).height()*0.25);
+    $("#notepad").height($("#mappane").height());
+    $("#messagepane").height( $(window).height() - $("#mappane").outerHeight() -8 );
 
-    $('#notepad').resizable({
+    $('#mappane').resizable({
         containment: 'document',
         handles: 's'
     });
@@ -572,7 +603,7 @@ function ThreadUI(delegate)
         me.handleResize();
     });
 
-    $('#notepad').bind( "resize", function(event, ui) {
+    $('#mappane').bind( "resize", function(event, ui) {
         me.handleResize();
     });
     
@@ -967,7 +998,6 @@ function test()
     window.alert('test');
 }
 
-
 $(window.document).ready( function() {
 
     var routes = {
@@ -996,7 +1026,3 @@ $(window.document).ready( function() {
 });
 
 })(window);
-
-
-    
-
