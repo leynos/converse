@@ -309,7 +309,8 @@ function ThreadUI(delegate)
                 border: { 
                     width: 1,
                     radius: 4 
-                }
+                },
+                width: { max: 500 }
             },
             position: {
                 target: 'mouse', 
