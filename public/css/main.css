@@ -64,7 +64,6 @@ div#toolbar {
 #mappane > div#notepad {
     margin-left: 64px;
     margin-right: 64px;
-    width: 100%;
     background: white;
     overflow: hidden;
 }

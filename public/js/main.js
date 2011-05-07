@@ -249,9 +249,11 @@ function ThreadUI(delegate)
         $(this).mousemove(notepadDrag);
         dragOrigin.x = e.pageX;
         dragOrigin.y = e.pageY;
+        $(this).css('cursor', 'move');
     });
     $('#notepad').mouseup( function(e) {
         $(this).unbind('mousemove', notepadDrag);
+        $(this).css('cursor', 'auto');
     });
 
     // Select a post and draw the selection circle
@@ -276,6 +278,7 @@ function ThreadUI(delegate)
             selection = paper.circle(cx, cy, mul*0.2);
             selection.attr("fill", "black");
             $(selection.node).qtip(qtips[id]);
+            $(selection.node).css("cursor", "pointer");
         }
 
         // Scroll to the post in the message pane
@@ -313,10 +316,12 @@ function ThreadUI(delegate)
                 corner: {
                     target: 'rightBottom',
                     tooltip: 'leftTop'
-                }
+                },
+                adjust: { x: 16, y: 16 }
             }
         };
         $(c.node).qtip(qtips[id]);
+        $(c.node).css("cursor", "pointer");
         
         var i=0;
         var count=1;
