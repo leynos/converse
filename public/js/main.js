@@ -400,9 +400,11 @@ function ThreadUI(delegate)
         var author_id = post.author;
         var author = users[author_id];
         if (author) {
-            div.prepend('<h3>'+htmlSpecialChars(author_id)+'</h3>');
-            div.prepend('<img src="user/'+encodeURIComponent(author_id)+
-                '/avatar" class="avatar user-'+htmlSpecialChars(author_id)+'" class="avatar" />');
+            div.prepend($('<h3>').text(author_id));
+            div.prepend($('<img>', { 
+                src: 'user/'+encodeURIComponent(author_id)+'/avatar',
+                'class': 'avatar user-'+author_id
+            }));
         }
         div.find('h3').before('<div class="date">'+ postDate.format(en_GB_datef)+'</div>');
 
@@ -564,8 +566,8 @@ function ThreadUI(delegate)
         }
         var editor;
         function replyBody() {
-            return $("<div/>").html(
-                $('#reply-body-field').val()).text();
+            return $("<div/>").html($('#reply-body-field')
+                .val()).text();
         }
         $('<div id="reply-dialog">').load("panels/reply.html", function () {
             editor = $('#reply-body-field').cleditor({
@@ -610,7 +612,7 @@ function ThreadUI(delegate)
     }
 
     this.noPosts = function() {
-        $("#messagepane").html("No post found! :o");
+        $("#messagepane").text("No post found! :o");
     };
 
     this.hideAllReplyButtons = function() {
