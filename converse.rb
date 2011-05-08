@@ -303,7 +303,6 @@ end
 get '/post/:post_id' do
     content_type :json
     post_id = params[:post_id]
-
     {
         :posts => controller.posts_for_id(post_id),
         :users => controller.users_for_id(post_id)

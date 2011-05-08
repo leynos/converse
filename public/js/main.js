@@ -673,6 +673,7 @@ function BoardUI(delegate)
     var odd=true;
 
     $('#view').children().remove();
+    $('#view').append('<div id="board-banner"><h1 id="title" /><div id="description" /></div>');
     $('#view').append('<div id="thread-list"></div>');
     $('#thread-list').append('<div id="thread-list-toolbar"></div>');
     $('#thread-list-toolbar').append(
@@ -780,6 +781,14 @@ function BoardUI(delegate)
         });
     }
 
+    this.setTitle = function(title) {
+        $('#board-banner #title').text(title);
+    };
+
+    this.setDescription = function(desc) {
+        $('#board-banner #description').text(desc);
+    };
+
     this.destroy = function() { };
 }
 
@@ -796,6 +805,9 @@ function Converse()
         var modelCallback = function (data, textStatus, response) {
             if (data.users) {
                 view.addUsers(data.users);
+            }
+            if (data.subject) {
+                document.title = data.subject + ' (Converse)';
             }
             if (data.posts && data.posts.length > 0) {
                 _(data.posts).each(function(post) {
@@ -822,6 +834,13 @@ function Converse()
 
     this.loadBoard = function (board_id) {
         var modelCallback = function (data, textStatus, response) {
+            if (data.title) {
+                document.title = data.title + ' (Converse)';
+                view.setTitle(data.title);
+            }
+            if (data.description) {
+                view.setDescription(data.description);
+            }
             if (data.threads)
             {
                 _(data.threads).each(function(thread) {

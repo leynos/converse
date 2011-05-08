@@ -92,8 +92,14 @@ div.error {
     margin: 2px;
 }
 
+#board-banner {
+    margin-top: 64px;
+    padding-left: 64px;
+    padding-right: 64px;
+}
+
 #thread-list {
-    margin-top: 128px;
+    margin-top: 16px;
     padding-left: 64px;
     padding-right: 64px;
 }
