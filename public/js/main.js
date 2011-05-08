@@ -415,9 +415,11 @@ function ThreadUI(delegate)
             click: function() { window.alert('Not yet implemented'); }
         });
         messageToolbar.append(deleteButton);
+/*
         if (post.author != delegate.username) {
             deleteButton.hide();
         }
+*/
         var replyButton = $('<img />', {
             src: 'images/reply_s.png',
             'class': 'message-control reply-button'
@@ -611,6 +613,22 @@ function ThreadUI(delegate)
         $("#messagepane").html("No post found! :o");
     };
 
+    this.hideAllReplyButtons = function() {
+        $(".message-toolbar .reply-button").hide();
+    };
+
+    this.showAllReplyButtons = function() {
+        $(".message-toolbar .reply-button").show();
+    };
+
+    this.hideAllDeleteButtons = function() {
+        $(".message-toolbar .delete-button").hide();
+    };
+
+    this.showDeleteButtonsForUser = function(username) {
+        $(".message-toolbar .delete-button.user-"+username).show();
+    };
+
     $('#mappane').height($(window).height()*0.25);
     $("#notepad").height($("#mappane").height());
     $("#messagepane").height( $(window).height() - $("#mappane").outerHeight() -8 );
@@ -786,6 +804,7 @@ function Converse()
             } else {
                 view.noPosts();
             }
+            me.didLogin();
         };
         var options = {
             url: "post/"+encodeURIComponent(post_id),
@@ -817,9 +836,18 @@ function Converse()
         $.ajax(options);
     };
 
+    var viewChangeCallback;
+
     this.setView = function(v) {
         if (view) { view.destroy(); }
         view = v;
+        if (viewChangeCallback) {
+            viewChangeCallback();
+        }
+    };
+
+    this.setViewChangeCallback = function(fn) {
+        viewChangeCallback = fn;
     };
 
     this.viewThread = function(root_id) {
@@ -837,6 +865,23 @@ function Converse()
         me.setView(new BoardUI(me));
         me.loadBoard(board_id);
     };
+
+    this.didLogin = function(data) {
+        if (data) {
+            me.loggedin = data.loggedin;
+            me.username = data.username;
+            me.rights = data.rights;
+        }
+        if (view instanceof ThreadUI) {
+            view.hideAllDeleteButtons();
+            if (me.loggedin) {
+                view.showAllReplyButtons();
+                view.showDeleteButtonsForUser(me.username);
+            } else {
+                view.hideAllReplyButtons();
+            }
+        }
+    }
 }
 
 function toolbarButton(id, image, caption, onclick) 
@@ -959,6 +1004,7 @@ function loginCallback(data, statusText, req, error)
     if (req.status == 200) {
         $( '#login-dialog' ).remove();
         loadToolbar(data);
+        converse.didLogin(data);
     } else if (req.status == 403) {
         $('#login-form')
             .before('<div class="error" id="login-form-error">An incorrect username or password has been supplied</div>');
@@ -1025,6 +1071,7 @@ function showConfirmLogout()
                     type: 'POST',
                     success: function(data) { 
                         loadToolbar(data);
+                        converse.didLogin(data);
                     }
                 } );
             },
@@ -1062,9 +1109,8 @@ $(window.document).ready( function() {
     });
 
     $.get('loggedin', function(data) {
-        converse.loggedin=data.loggedin;
-        converse.username=data.username;
         loadToolbar(data);
+        converse.didLogin(data);
         $(window).trigger( 'hashchange' );
     });
 });
