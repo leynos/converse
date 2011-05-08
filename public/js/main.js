@@ -302,7 +302,7 @@ function ThreadUI(delegate)
             me.select(id, paper);
         });
         qtips[id] = {
-            content: '<b>'+users[post.author].displayname+'</b><br />'+postDate.format(en_GB_datef),
+            content: '<b>'+htmlSpecialChars(post.author)+'</b><br />'+postDate.format(en_GB_datef),
             show: 'mouseover',
             hide: 'mouseout',
             style: {
@@ -400,9 +400,9 @@ function ThreadUI(delegate)
         var author_id = post.author;
         var author = users[author_id];
         if (author) {
-            div.prepend('<h3>'+author.displayname+'</h3>');
+            div.prepend('<h3>'+htmlSpecialChars(author_id)+'</h3>');
             div.prepend('<img src="user/'+encodeURIComponent(author_id)+
-                '/avatar" class="avatar" class="avatar" />');
+                '/avatar" class="avatar user-'+htmlSpecialChars(author_id)+'" class="avatar" />');
         }
         div.find('h3').before('<div class="date">'+ postDate.format(en_GB_datef)+'</div>');
 
@@ -411,7 +411,7 @@ function ThreadUI(delegate)
         });
         var deleteButton = $('<img />', {
             src: 'images/deletepost_s.png',
-            'class': 'message-control delete-button',
+            'class': 'message-control delete-button user-'+author_id,
             click: function() { window.alert('Not yet implemented'); }
         });
         messageToolbar.append(deleteButton);
@@ -924,13 +924,13 @@ function showAddUser()
     } );
 }
 
-function showEditUser(user) 
+function showEditUser() 
 {
     if ($('#edituser-dialog').length !== 0 ) { 
         return false;
     }
     var reloadAvatars = function () {
-                $(".avatar").each(function() {
+                $(".avatar.user-"+converse.username).each(function() {
                     src = $(this).attr('src');
                     cookie = Math.random();
                     $(this).attr('src', src+'?'+cookie);

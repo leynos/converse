@@ -23,24 +23,46 @@ class Post < CouchRest::ExtendedDocument
     property :body
     property :board
 
-    view_by  :author, :date
+    view_by  :author, :date,
+        :map => "function(doc) {
+            if ((doc['couchrest-type'] == 'Post') && (doc['author'] != null) && (doc['date'] != null)) {
+                emit([doc['author'], doc['date']], null);
+            }
+        }",
+        :reduce => "function(key, values, rereduce) {
+            var sum = [0, ''];
+            if (rereduce)
+            {
+                values.forEach(function(val) {
+                    sum[0] += val[0];
+                    // If a newer post exists
+                    if (val[1] > sum[1]) {
+                        sum[1]=val[1];
+                    }
+                });
+            } else {
+                key.forEach(function(k) {
+                    sum[0]++;
+                    // If a newer post exists
+                    if (k[0][1] > sum[1]) {
+                        sum[1]=k[0][1];
+                    }
+                });
+            }
+            return sum;
+        }"
 
     view_by  :thread,
         :map => "function(doc) {
             if (doc['couchrest-type'] == 'Post') 
             {
-                var board = 'main';
-                if (doc.board)
-                {
-                    board = doc.board;
-                }
                 if (doc.path.length == 0)
                 {
                     // post
-                    emit([board, doc._id, doc.date, 0, doc.subject], doc);
+                    emit([doc.board, doc._id, doc.date, 0, doc.subject], doc);
                 } else {
                     // reply
-                    emit([board, doc.path[0], doc.date, 1], doc, null);
+                    emit([doc.board, doc.path[0], doc.date, 1], doc, null);
                 }
             }
         }",
@@ -55,16 +77,16 @@ class Post < CouchRest::ExtendedDocument
             var sum = ['', 0, null, null, null];
             if (rereduce)
             {
-                values.forEach(function(amt) {
-                    sum[1] += amt[1];
-                    if (amt[0] > sum[0])
+                values.forEach(function(val) {
+                    sum[1] += val[1];
+                    if (val[0] > sum[0])
                     {
-                        sum[0] = amt[0];
-                        sum[2] = amt[2];
+                        sum[0] = val[0];
+                        sum[2] = val[2];
                     }
-                    if (amt[3]) sum[3] = amt[3];
-                    if (amt[4]) sum[4] = amt[4];
-                    if (amt[5]) sum[5] = amt[5];
+                    if (val[3]) sum[3] = val[3];
+                    if (val[4]) sum[4] = val[4];
+                    if (val[5]) sum[5] = val[5];
                 });
             } else {
                 var i = 0;
@@ -142,6 +164,17 @@ class Post < CouchRest::ExtendedDocument
     def set_parent(parent)
         # Inherit the parent's path
         self.path = parent.path + [parent.id]
+    end
+
+    def self.post_history_for_user(user)
+        username = if user.is_a? User then user.username else user end
+        result = Post.by_author_and_date :startkey => [user.username],
+                :endkey => [user.username, {}], :reduce => true, :group_level => 1
+        if result['rows'].nil? or result['rows'].count == 0 or
+           result['rows'][0]['value'].nil? then
+            return []
+        end
+        result['rows'][0]['value']
     end
 
 end

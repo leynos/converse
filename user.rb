@@ -26,6 +26,7 @@ class User < CouchRest::ExtendedDocument
 
     property :username
     property :password
+    property :joined,           DateTime
     property :roles,            [String]
     property :groups,           [String]
     property :avatar_modified,  Time

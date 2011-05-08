@@ -30,25 +30,19 @@ class PostController
             return []
         end
         names = result['rows'][0]['value']
-        users = {};
-        names.each do |username|
-            result = User.by_username :key => username
-            if result.empty? then
-                next
-            end
-            user = result[0];
-            users[username] = {
+
+        usersHash = {};
+        result = User.by_username :keys => names
+        result.each do |user|
+            hist= Post.post_history_for_user user
+            usersHash[user.username] = {
                 :username => user.username,
-                :displayname => 
-                    if user.displayname.nil? then 
-                        user.username 
-                    else 
-                        user.displayname 
-                    end,
-                :avatar => 'default'
+                :joined => user.joined,
+                :post_count => hist[0],
+                :last_posted => hist[1]
             }
         end
-        return users
+        return usersHash
     end
 
     def posts_for_id(root_id)
