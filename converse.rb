@@ -67,15 +67,28 @@ helpers do
         if not loggedin? then error 403, 'You are not logged in' end
     end
 
+    def json_req_error(err, params={})
+        err_hash = {:error => err}
+        err_hash.merge! params
+        halt [400, err_hash.to_json]
+    end
+
     def must_have_waited(atleast, secs)
         if secs < 20 then
-            halt [400, {
-                :error => :slow_down,
-                :wait_atleast => 20
-            }.to_json]
+            json_req_error :slow_down, :wait_atleast => 20
         end
     end
 
+    def required_parameter(param, options={})
+        val = params[param]
+        if val.nil? or val.empty? or val =~ /\A\s+\z/ then
+            json_req_error :required_field, :field => param
+        end
+        min_len = options[:min_len]
+        if min_len and val.strip.length < min_len then
+            json_req_error :required_field, :field => param, :min_len => min_len
+        end
+    end
 end
 
 get '/' do
@@ -93,6 +106,10 @@ get '/user/:username' do
 end
         
 put '/user/:username' do 
+
+    required_parameter :username
+    required_parameter :password
+
     username=params[:username]
     password=params[:password]
     old_user = User.for_username username
@@ -145,28 +162,22 @@ post '/avatar' do
     must_be_loggedin
 
     unless params[:file] && (tmpfile = params[:file][:tempfile]) then
-        return [400, 'A file must be supplied with this request']
+        json_req_error :file_required
     end
 
     username = session[:username]
     user = User.for_username username
     user_not_found_e if user.nil?
 
+    max_bytes = 40960
+    if tmpfile.size > max_bytes then
+        json_req_error :file_too_large, :max_bytes => max_bytes
+    end
+
     max_size = [128, 128]
     imageSize = ImageSize.new(File.new(tmpfile.path))
     if (imageSize.width > max_size[0] || imageSize.height > max_size[1]) then
-        return [400, {
-            :error => :image_too_large,
-            :max_size => max_size
-        }.to_json]
-    end
-
-    max_bytes = 40960
-    if tmpfile.size > max_bytes then
-        return [400, {
-            :error => :file_too_large,
-            :max_bytes => max_bytes
-        }.to_json]
+        json_req_error :image_too_large, :max_size => max_size
     end
 
     user.avatar = tmpfile
@@ -245,14 +256,15 @@ end
 post '/board/:board_id/post' do
 
     must_be_loggedin
+    must_have_waited 20, controller.secs_ago_posted(user)
+    required_parameter :subject
+    required_parameter :body
 
     board = Board.for_name params[:board_id]
     board_not_found_e if board.nil?
 
     user = User.for_username session[:username]
     user_db_e if user.nil?
-
-    must_have_waited 20, controller.secs_ago_posted(user)
 
     unless board.user_may_post? user
         error 403, 'You may not post here'
@@ -271,6 +283,8 @@ end
 post '/post/:post_id/reply' do 
 
     must_be_loggedin
+    must_have_waited 20, controller.secs_ago_posted(user)
+    required_parameter :body
 
     post_id = params[:post_id]
     parent = Post.for_id post_id
@@ -283,8 +297,6 @@ post '/post/:post_id/reply' do
     board_db_e if board.nil?
     user = User.for_username session[:username]
     user_db_e if user.nil?
-
-    must_have_waited 20, controller.secs_ago_posted(user)
 
     unless board.user_may_post? user, true
         error 403, 'You may not post here'
@@ -360,8 +372,8 @@ get '/loggedin' do
 end
 
 post '/login' do
-    username = params[:username]
-    password = params[:password]
+    username = params[:username] or ""
+    password = params[:password] or ""
     rememberme = yes_or_true? params[:rememberme]
 
     user = User.for_username username
