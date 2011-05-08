@@ -25,11 +25,12 @@ class PostController
 
     def users_for_id(root_id)
         result = Post.by_first_ancestor :key => root_id, :reduce => true
-        if result['rows'].nil? or result['rows'].count == 0 or 
-           result['rows'][0]['value'].nil? then
+
+        begin
+            names = result['rows'][0]['value']
+        rescue NoMethodError
             return []
         end
-        names = result['rows'][0]['value']
 
         usersHash = {};
         result = User.by_username :keys => names
@@ -115,7 +116,8 @@ class PostController
     end
 
     def threads(board)
-        result = Post.by_thread :startkey => [:board], :endkey => [board, {}], :reduce => true, :group_level => 2
+        result = Post.by_thread :startkey => [:board], 
+            :endkey => [board, {}], :reduce => true, :group_level => 2
         rows = result["rows"]
 
         posts = []                                                   

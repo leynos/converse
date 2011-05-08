@@ -170,11 +170,11 @@ class Post < CouchRest::ExtendedDocument
         username = if user.is_a? User then user.username else user end
         result = Post.by_author_and_date :startkey => [user.username],
                 :endkey => [user.username, {}], :reduce => true, :group_level => 1
-        if result['rows'].nil? or result['rows'].count == 0 or
-           result['rows'][0]['value'].nil? then
+        begin 
+            return result['rows'][0]['value']
+        rescue NoMethodError
             return []
         end
-        result['rows'][0]['value']
     end
 
 end
