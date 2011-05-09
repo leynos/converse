@@ -256,7 +256,6 @@ end
 post '/board/:board_id/post' do
 
     must_be_loggedin
-    must_have_waited 20, controller.secs_ago_posted(user)
     required_parameter :subject
     required_parameter :body
 
@@ -265,6 +264,8 @@ post '/board/:board_id/post' do
 
     user = User.for_username session[:username]
     user_db_e if user.nil?
+
+    must_have_waited 20, controller.secs_ago_posted(user)
 
     unless board.user_may_post? user
         error 403, 'You may not post here'
@@ -283,7 +284,6 @@ end
 post '/post/:post_id/reply' do 
 
     must_be_loggedin
-    must_have_waited 20, controller.secs_ago_posted(user)
     required_parameter :body
 
     post_id = params[:post_id]
@@ -297,6 +297,8 @@ post '/post/:post_id/reply' do
     board_db_e if board.nil?
     user = User.for_username session[:username]
     user_db_e if user.nil?
+
+    must_have_waited 20, controller.secs_ago_posted(user)
 
     unless board.user_may_post? user, true
         error 403, 'You may not post here'
