@@ -546,7 +546,7 @@ function ThreadUI(delegate)
 
     function replyCallback (req) {
         if (req.status == 200) {
-            $( '#reply-dialog' ).remove();
+            $( '#reply-dialog' ).dialog('close');
             delegate.reloadCurrentThread();
         } else if (req.status == 403) {
             $('#reply-form')
@@ -714,7 +714,7 @@ function BoardUI(delegate)
 
     function postCallback (req) {
         if (req.status == 200) {
-            $( '#post-dialog' ).remove();
+            $( '#post-dialog' ).dialog('close');
             delegate.reloadCurrentBoard();
         } else if (req.status == 403) {
             $('#post-form')

@@ -79,16 +79,50 @@ helpers do
         end
     end
 
-    def required_parameter(param, options={})
-        val = params[param]
-        if val.nil? or val.empty? or val =~ /\A\s+\z/ then
-            json_req_error :required_field, :field => param
+    class ParameterCheck
+
+        attr_accessor :params, :missing_params, :badsized_params
+
+        def missing_param(p) missing_params.push p end
+        def missing_params? missing_params.empty? end
+        def badsized_param(p) badsized_params.push p end
+        def badsized_params? badsized_params.empty? end
+
+        def initialize(params, &block)
+
+            self.params = params
+            self.missing_params = []
+            self.badsized_params = []
+
+            instance_eval &block
         end
-        min_len = options[:min_len]
-        if min_len and val.strip.length < min_len then
-            json_req_error :required_field, :field => param, :min_len => min_len
+
+        def required_parameter(param, options={})
+            val = params[param]
+            if val.nil? or val.empty? or val =~ /\A\s+\z/ then
+                missing_param param
+            end
+            min_len = options[:min_len]
+            if min_len and val.strip.length < min_len then
+                badsized_param :param => param, :min_len => min_len
+            end
+            max_len = options[:max_len]
+            if max_len and val.strip.length > max_len then
+                badsized_param :param => param, :max_len => max_len
+            end
         end
     end
+
+    def check_parameters(&block)
+        check = ParameterCheck.new params, &block
+        if check.missing_params? then
+            json_req_error :missing_params, :params => check.missing_params
+        end
+        if check.badsized_params? then
+            json_req_error :badsized_params, :params => check.badsized_params
+        end
+    end
+
 end
 
 get '/' do
@@ -107,14 +141,16 @@ end
         
 put '/user/:username' do 
 
-    required_parameter :username
-    required_parameter :password
+    check_parameters do
+        required_parameter :username
+        required_parameter :password
+    end
 
     username=params[:username]
     password=params[:password]
     old_user = User.for_username username
     unless old_user.nil? then
-        return [409, 'A user of that name already exists']
+        error 409, 'A user of that name already exists'
     end
     user = User.new
     user.username = username
@@ -161,7 +197,9 @@ post '/avatar' do
 
     must_be_loggedin
 
-    unless params[:file] && (tmpfile = params[:file][:tempfile]) then
+    begin
+        tmpfile = params[:file][:tempfile]
+    rescue NoMethodError
         json_req_error :file_required
     end
 
@@ -216,10 +254,10 @@ put '/board/:board_id' do
 
     user = User.for_username session[:username]
     user_db_e if user.nil?
-    return 403 unless user.has_role? :admin
+    error 403 unless user.has_role? :admin
     old_board = Board.for_name params[:board_id]
     unless old_board.nil? then
-        return [409, 'A board with that name already exists']
+        error 409, 'A board with that name already exists'
     end
 
     board = Board.new(
@@ -238,7 +276,6 @@ put '/board/:board_id' do
         :moderated => params[:moderated]?true:false
     )
     board.save!
-
 end
 
 delete '/board/:board_id' do
@@ -247,7 +284,7 @@ delete '/board/:board_id' do
 
     user = User.for_username session[:username]
     user_db_e if user.nil?
-    return 403 unless user.has_role? :admin
+    error 403 unless user.has_role? :admin
     board = board.for_name params[:board_id]
     board_not_found_e if board.nil?
     board.destroy unless board.nil?
@@ -256,8 +293,11 @@ end
 post '/board/:board_id/post' do
 
     must_be_loggedin
-    required_parameter :subject
-    required_parameter :body
+
+    check_parameters do
+        required_parameter :subject, :min_len => 5
+        required_parameter :body
+    end
 
     board = Board.for_name params[:board_id]
     board_not_found_e if board.nil?
@@ -284,7 +324,10 @@ end
 post '/post/:post_id/reply' do 
 
     must_be_loggedin
-    required_parameter :body
+
+    check_parameters do
+        required_parameter :body
+    end
 
     post_id = params[:post_id]
     parent = Post.for_id post_id
@@ -380,11 +423,11 @@ post '/login' do
 
     user = User.for_username username
     if user.nil? then
-        return [403, 'Incorrect username or password']
+        error 403, 'Incorrect username or password'
     end
 
     if not user.check_password? password then
-        return [403, 'Incorrect username or password']
+        error 403, 'Incorrect username or password'
     end
 
     session[:username] = username
