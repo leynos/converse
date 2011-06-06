@@ -41,6 +41,7 @@ div.message-toolbar {
 img.avatar {
     float: left;
     margin-right: 4px;
+    user-select: none;
 }
 div#toolbar {
     display: inline-block;

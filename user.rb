@@ -21,8 +21,8 @@ require 'fastimage_resize'
 
 class User < CouchRest::ExtendedDocument
 
-    @@avatar_att_name = "avatar"
-    @@avatar_s_att_name = "avatar_s"
+    @@AVATAR_ATT_NAME = "avatar"
+    @@AVATAR_S_ATT_NAME = "avatar_s"
 
     property :username
     property :password
@@ -63,10 +63,10 @@ class User < CouchRest::ExtendedDocument
     end
 
     def avatar=(file)
-        if self.has_attachment? @@avatar_att_name then
-            self.delete_attachment @@avatar_att_name
+        if self.has_attachment? @@AVATAR_ATT_NAME then
+            self.delete_attachment @@AVATAR_ATT_NAME
         end
-        self.create_attachment :file => file, :name => @@avatar_att_name
+        self.create_attachment :file => file, :name => @@AVATAR_ATT_NAME
         self.avatar_s=file
         self.avatar_modified = Time.now
     end
@@ -81,27 +81,27 @@ class User < CouchRest::ExtendedDocument
         else
             w = old_w * ( 48.0 / old_h.to_f ); h = 48
         end
-        resized = Tempfile.new @@avatar_s_att_name
+        resized = Tempfile.new @@AVATAR_S_ATT_NAME
         FastImage.resize(file.path, resized.path, w, h)
 
         # Save the resized attachment, overwriting if one exists
-        if self.has_attachment? @@avatar_s_att_name then
-            self.delete_attachment @@avatar_s_att_name
+        if self.has_attachment? @@AVATAR_S_ATT_NAME then
+            self.delete_attachment @@AVATAR_S_ATT_NAME
         end
-        self.create_attachment :file => resized, :name => @@avatar_s_att_name
+        self.create_attachment :file => resized, :name => @@AVATAR_S_ATT_NAME
     end
 
     def has_avatar?
-        self.has_attachment? @@avatar_att_name and
-            self.has_attachment? @@avatar_s_att_name
+        self.has_attachment? @@AVATAR_ATT_NAME and
+            self.has_attachment? @@AVATAR_S_ATT_NAME
     end
 
     def avatar
-        self.read_attachment @@avatar_att_name
+        self.read_attachment @@AVATAR_ATT_NAME
     end
 
     def avatar_s
-        self.read_attachment @@avatar_s_att_name
+        self.read_attachment @@AVATAR_S_ATT_NAME
     end
 
     def has_role?(role)

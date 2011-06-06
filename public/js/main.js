@@ -232,7 +232,9 @@ function ThreadUI(delegate)
     $('#view').children().remove();
     $('#view').append('<div id="mappane"><div id="notepad" /></div>');
     $('#view').append('<div id="messagepane"></div>');
-    paper = Raphael("notepad", 400, 300);
+    var paperWidth = 400;
+    var paperHeight = 300;
+    paper = Raphael("notepad", paperWidth, paperHeight);
 
     var dragOrigin = {};
     function notepadDrag(e) {
@@ -292,9 +294,22 @@ function ThreadUI(delegate)
         if (!x) { x=1; }
         if (!y) { y=1; }
 
-        var c = paper.circle(x*mul, y*vmul, mul*0.4);
+        var circX = x*mul;
+        var circY = y*vmul;
+        var circRad = mul*0.4;
+        var newWidth = circX+circRad;
+        var newHeight = circY+circRad;
+        var c = paper.circle(circX, circY, circRad);
         var id = post.id;
         var postDate = new Date();
+
+        if (paperWidth < newWidth || paperHeight < newHeight)
+        {
+            paperWidth = Math.max(paperWidth, newWidth);
+            paperHeight = Math.max(paperHeight, newHeight);
+            paper.setSize(paperWidth, paperHeight);
+        }
+
         postDate.setISO8601(post.date);
         circles[id] = c;
         c.attr("fill", "white");
@@ -382,7 +397,7 @@ function ThreadUI(delegate)
             id: "post-"+post.id,
             'class': "message-cell"
         });
-        div.dblclick(function(e) {
+        div.click(function(e) {
             me.select(post.id, paper);
         });
 

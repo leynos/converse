@@ -24,10 +24,16 @@ require './post'
 require './board'
 require './postController'
 
+if ARGV.empty? then
+    db_name = 'converse'
+else
+    db_name = ARGV.first
+end
+
 db_url = if ENV['CLOUDANT_URL'] then 
-    "#{ENV['CLOUDANT_URL']}/converse"
+    "#{ENV['CLOUDANT_URL']}/#{db_name}"
 else 
-    'http://127.0.0.1:5984/converse' 
+    "http://127.0.0.1:5984/#{db_name}" 
 end
 
 DB = CouchRest.database!(db_url)
@@ -45,14 +51,14 @@ logger.info "\033]0;Sinatra (Converse)\007"
 enable :sessions
 
 helpers do
-    def user_not_found_e(msg='The specified user does not exist') 
-        error 404, msg end
-    def user_db_e(msg='Error retrieving user from database') 
+    def user_not_found(msg='The specified user does not exist') 
+        not_found msg end
+    def user_db_error(msg='Error retrieving user from database') 
         error 500, msg end
-    def board_db_e(msg='Error retrieving board from database') 
+    def board_db_error(msg='Error retrieving board from database') 
         error 500, msg end
-    def board_not_found_e(msg='The specified board does not exist') 
-        error 404, msg end
+    def board_not_found(msg='The specified board does not exist') 
+        not_found msg end
     def loggedin?() session[:loggedin] end
     def username?(u) session[:username]==u end
     def yes_or_true?(v) not v.nil? and 
@@ -70,6 +76,7 @@ helpers do
     def json_req_error(err, params={})
         err_hash = {:error => err}
         err_hash.merge! params
+        content_type :json
         halt [400, err_hash.to_json]
     end
 
@@ -84,9 +91,9 @@ helpers do
         attr_accessor :params, :missing_params, :badsized_params
 
         def missing_param(p) missing_params.push p end
-        def missing_params? missing_params.empty? end
+        def missing_params?() missing_params.empty? end
         def badsized_param(p) badsized_params.push p end
-        def badsized_params? badsized_params.empty? end
+        def badsized_params?() badsized_params.empty? end
 
         def initialize(params, &block)
 
@@ -132,7 +139,7 @@ end
 get '/user/:username' do
     username=params[:username]
     user = User.for_username username
-    user_not_found_e if user.nil?
+    user_not_found if user.nil?
     {
         :username => user.username,
         :displayname => user.displayname
@@ -163,10 +170,10 @@ end
 get %r{/user/([^/]*)/avatar(/small)?} do |username, small|
 
     user = User.for_username username
-    user_not_found_e if user.nil?
+    user_not_found if user.nil?
 
     unless user.has_avatar? then
-        if small
+        if small then
             redirect '/images/no_avatar_s.png'
         else
             redirect '/images/no_avatar.png'
@@ -205,7 +212,7 @@ post '/avatar' do
 
     username = session[:username]
     user = User.for_username username
-    user_not_found_e if user.nil?
+    user_not_found if user.nil?
 
     max_bytes = 40960
     if tmpfile.size > max_bytes then
@@ -219,7 +226,7 @@ post '/avatar' do
     end
 
     user.avatar = tmpfile
-    user.save!
+    user.save
 end
 
 get '/board' do
@@ -228,12 +235,12 @@ end
 
 get '/board/:board_id' do
     board = Board.for_name params[:board_id]
-    board_not_found_e if board.nil?
+    board_not_found if board.nil?
 
     may_post = false
     if loggedin? then
         user = User.for_username session[:username]
-        user_db_e if user.nil?
+        user_db_error if user.nil?
         may_post = board.user_may_post? user
     end
 
@@ -253,7 +260,7 @@ put '/board/:board_id' do
     must_be_loggedin
 
     user = User.for_username session[:username]
-    user_db_e if user.nil?
+    user_db_error if user.nil?
     error 403 unless user.has_role? :admin
     old_board = Board.for_name params[:board_id]
     unless old_board.nil? then
@@ -275,7 +282,7 @@ put '/board/:board_id' do
         :private => params[:private]?true:false,
         :moderated => params[:moderated]?true:false
     )
-    board.save!
+    board.save
 end
 
 delete '/board/:board_id' do
@@ -283,10 +290,10 @@ delete '/board/:board_id' do
     must_be_loggedin
 
     user = User.for_username session[:username]
-    user_db_e if user.nil?
+    user_db_error if user.nil?
     error 403 unless user.has_role? :admin
     board = board.for_name params[:board_id]
-    board_not_found_e if board.nil?
+    board_not_found if board.nil?
     board.destroy unless board.nil?
 end
 
@@ -300,10 +307,10 @@ post '/board/:board_id/post' do
     end
 
     board = Board.for_name params[:board_id]
-    board_not_found_e if board.nil?
+    board_not_found if board.nil?
 
     user = User.for_username session[:username]
-    user_db_e if user.nil?
+    user_db_error if user.nil?
 
     must_have_waited 20, controller.secs_ago_posted(user)
 
@@ -337,9 +344,9 @@ post '/post/:post_id/reply' do
     end
 
     board = Board.for_name parent.board
-    board_db_e if board.nil?
+    board_db_error if board.nil?
     user = User.for_username session[:username]
-    user_db_e if user.nil?
+    user_db_error if user.nil?
 
     must_have_waited 20, controller.secs_ago_posted(user)
 
@@ -369,37 +376,77 @@ end
 delete '/post/:post_id' do
 
     must_be_loggedin
+    error 403 unless user.has_role? :admin
 
-#    if yes_or_true? params[:recursive] then
-#        result = Post.by_ancestor :startkey => [post_id], :endkey => [post_id, {}]
-#    else
-#        result = Post.all :key => :post_id
-#    end
-#
-#    if result.empty? then
-#        return [404, "The post you wish to delete no longer exists"]
-#    end
-#
-#    result.each do |post|
-#        post.destroy
-#    end
+    if yes_or_true? params[:recursive] then
+        result = Post.by_ancestor :startkey => [post_id], :endkey => [post_id, {}]
+    else
+        result = Post.all :key => :post_id
+    end
+
+    if result.empty? then
+        not_found "The post you wish to delete no longer exists"
+    end
+
+    result.each do |post|
+        post.destroy
+    end
 
     200
 end
 
-get '/post/:post_id/authors' do
-    #content_type :json
-    post_id=params[:post_id]
-    Post.by_author(:key => post_id, :reduce => true)
+#TODO: editing by board moderator
+#      version control
+post '/post/:post_id' do
+
+    must_be_loggedin
+
+    delete = yes_or_true? params[:delete]
+
+    post = Post.for_id post_id
+    not_found "The post you wish to edit no longer exists" if post.nil?
+
+    user = User.for_username session[:username]
+    user_db_error if user.nil?
+    user_is_author = username? post.author
+
+    unless user_is_author or user.has_role? :admin then
+        error 403
+    end
+
+    if delete then
+        if user_is_author then
+            post.body = "[b]This post has been deleted by the author[/b]"
+        else
+            post.body = "[b]This post has been deleted by an administrator[/b]"
+        end
+    else
+        is_root = post.path.empty?
+        check_parameters do
+            required_parameter :body
+            required_parameter :subject if is_root
+        end
+        
+        post.body = params[:body]
+        if is_root then post.subject = params[:subject] end
+    end
+    post.save
     200
 end
+
+#get '/post/:post_id/authors' do
+#    #content_type :json
+#    post_id=params[:post_id]
+#    Post.by_author(:key => post_id, :reduce => true)
+#    200
+#end
 
 get '/loggedin' do
     username = session[:username]
     content_type :json
     if loggedin? then
         user = User.for_username username
-        user_db_e if user.nil?
+        user_db_error if user.nil?
         {
             :loggedin => true,
             :username => username,
