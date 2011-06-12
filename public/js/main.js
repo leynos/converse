@@ -147,6 +147,8 @@ function ThreadUI(delegate)
     // Threadmap dimensions
     var mul=20;
     var vmul=25;
+    var paperWidth = 400;
+    var paperHeight = 300;
 
     // Raphael object for Threadmap
     var paper;
@@ -164,6 +166,12 @@ function ThreadUI(delegate)
     var parser = new BBCodeParser();
 
     var selected_id;
+
+    // The notepad div
+    var notepad;
+
+    // notepad drag origin
+    var dragOrigin = {};
 
     // Style threadmap elements
     function setPathAttrs(p) {
@@ -232,11 +240,9 @@ function ThreadUI(delegate)
     $('#view').children().remove();
     $('#view').append('<div id="mappane"><div id="notepad" /></div>');
     $('#view').append('<div id="messagepane"></div>');
-    var paperWidth = 400;
-    var paperHeight = 300;
+    notepad = $('#notepad');
     paper = Raphael("notepad", paperWidth, paperHeight);
 
-    var dragOrigin = {};
     function notepadDrag(e) {
         var dx = e.pageX - dragOrigin.x;
         var dy = e.pageY - dragOrigin.y;
@@ -247,13 +253,15 @@ function ThreadUI(delegate)
             'top':'-='+dy+'px'
         });
     }
-    $('#notepad').mousedown( function(e) {
+
+    notepad.mousedown( function(e) {
         $(this).mousemove(notepadDrag);
         dragOrigin.x = e.pageX;
         dragOrigin.y = e.pageY;
         $(this).css('cursor', 'move');
     });
-    $('#notepad').mouseup( function(e) {
+
+    notepad.mouseup( function(e) {
         $(this).unbind('mousemove', notepadDrag);
         $(this).css('cursor', 'auto');
     });
@@ -275,12 +283,30 @@ function ThreadUI(delegate)
         }
         var c = circles[id];
         if (c) {
-            cx = c.attr("cx");
-            cy = c.attr("cy");
+            var cx = c.attr("cx");
+            var cy = c.attr("cy");
             selection = paper.circle(cx, cy, mul*0.2);
             selection.attr("fill", "black");
             $(selection.node).qtip(qtips[id]);
             $(selection.node).css("cursor", "pointer");
+
+            // If the newly selected node is nearly out of view, scroll to encompass it
+            var axis = '';
+            if ( (cx < notepad.scrollLeft() + (notepad.width() * 0.25)) ||
+                 (cx > notepad.scrollLeft() + (notepad.width() * 0.75)) )
+            {
+                axis += 'x';
+            }
+            if ( (cy < notepad.scrollTop() + (notepad.height() * 0.25)) ||
+                 (cy > notepad.scrollTop() + (notepad.height() * 0.75)) )
+            {
+                axis += 'y';
+            }
+            if (axis != '')
+            {
+                notepad.scrollTo($(c.node), 400, 
+                    {offset: {top:vmul*-3, left:mul*-3}, axis: axis });
+            }
         }
 
         // Scroll to the post in the message pane
@@ -291,8 +317,8 @@ function ThreadUI(delegate)
     };
 
     function drawTree(post, x, y) {
-        if (!x) { x=1; }
-        if (!y) { y=1; }
+        if (!x) { x=3; }
+        if (!y) { y=3; }
 
         var circX = x*mul;
         var circY = y*vmul;
@@ -305,8 +331,8 @@ function ThreadUI(delegate)
 
         if (paperWidth < newWidth || paperHeight < newHeight)
         {
-            paperWidth = Math.max(paperWidth, newWidth);
-            paperHeight = Math.max(paperHeight, newHeight);
+            paperWidth = Math.max(paperWidth, newWidth) + mul;
+            paperHeight = Math.max(paperHeight, newHeight) + vmul;
             paper.setSize(paperWidth, paperHeight);
         }
 
@@ -317,7 +343,8 @@ function ThreadUI(delegate)
             me.select(id, paper);
         });
         qtips[id] = {
-            content: '<b>'+htmlSpecialChars(post.author)+'</b><br />'+postDate.format(en_GB_datef),
+            content: '<b>'+htmlSpecialChars(post.author)+'</b><br />'+
+                postDate.format(en_GB_datef),
             show: 'mouseover',
             hide: 'mouseout',
             style: {
@@ -555,7 +582,7 @@ function ThreadUI(delegate)
 
     this.handleResize = function () {
         $("#messagepane").height( $(window).height() - $("#mappane").outerHeight() -8 );
-        $("#notepad").height($("#mappane").height());
+        notepad.height($("#mappane").height());
         $("#mappane").width( $(window).width() - 16 );
     };
 
@@ -647,7 +674,7 @@ function ThreadUI(delegate)
     };
 
     $('#mappane').height($(window).height()*0.25);
-    $("#notepad").height($("#mappane").height());
+    notepad.height($("#mappane").height());
     $("#messagepane").height( $(window).height() - $("#mappane").outerHeight() -8 );
 
     $('#mappane').resizable({
