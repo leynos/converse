@@ -292,8 +292,8 @@ function ThreadUI(delegate)
 
             // If the newly selected node is nearly out of view, scroll to encompass it
             var axis = '';
-            if ( (cx < notepad.scrollLeft() + (notepad.width() * 0.25)) ||
-                 (cx > notepad.scrollLeft() + (notepad.width() * 0.75)) )
+            if ( (cx < notepad.scrollLeft() + (notepad.width() * 0.05)) ||
+                 (cx > notepad.scrollLeft() + (notepad.width() * 0.95)) )
             {
                 axis += 'x';
             }
@@ -305,7 +305,7 @@ function ThreadUI(delegate)
             if (axis != '')
             {
                 notepad.scrollTo($(c.node), 400, 
-                    {offset: {top:vmul*-3, left:mul*-3}, axis: axis });
+                    {offset: {top:vmul*-3, left:mul*-9}, axis: axis });
             }
         }
 
