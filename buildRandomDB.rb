@@ -9,6 +9,8 @@
 # MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
 # ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
 
+# Build a random database for testing purposes
+
 require 'rubygems'
 require 'couchrest_extended_document'
 require 'random_data'
@@ -60,24 +62,24 @@ Board.new(:name => 'main', :title => 'General Discussion', :owners => [names.fir
     :mod_groups => [], :status => 'open', :groups => [], :private => false, 
     :moderated => false).save
 
-CHANCE = 6
+CHANCE = 4
+REPLIES = 6
 THREADS = 98
 
-def reply (users, post, chance)
-
-    return unless (rand chance) == 0 
-    replies = (rand chance)+1
+def reply (users, post)
+    return unless (rand CHANCE) == 0 
+    replies = (rand REPLIES)+1
     author = users[rand users.count]
     date = post.date
     replies.times do 
+        date = date.next_day
         r = Post.new( :body => (Random.paragraphs rand(5)+1), :date => date,
             :author => author.username,
             :path => [],
             :board => 'main')
         r.set_parent post
         r.save
-        reply(users, r, chance)
-        date = date.next_day
+        reply(users, r)
     end
 end
     
@@ -85,13 +87,14 @@ end
 root_date = Random.date_between Date.parse('2001-01-01')..Date.parse('2002-01-01')
 THREADS.times do
     author = users[rand USER_COUNT]
-    root = Post.new(:subject => ((Random.paragraphs 1).chomp.chomp.split ' ')[0..rand(12)+3].join(' '),
+    root = Post.new(
+        :subject => ((Random.paragraphs 1).chomp.chomp.split ' ')[0..rand(12)+3].join(' '),
         :body => (Random.paragraphs rand(5)+1), :date => root_date, 
         :author => author.username,
         :path => [],
         :board => 'main')
     root.save
-    reply(users, root, CHANCE)
+    reply(users, root)
     root_date = root_date.next_day
 end
 
