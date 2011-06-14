@@ -24,11 +24,7 @@ require './post'
 require './board'
 require './postController'
 
-if ARGV.empty? then
-    db_name = 'converse'
-else
-    db_name = ARGV.first
-end
+db_name = 'converse'
 
 db_url = if ENV['CLOUDANT_URL'] then 
     "#{ENV['CLOUDANT_URL']}/#{db_name}"
