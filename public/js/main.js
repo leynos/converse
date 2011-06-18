@@ -184,7 +184,8 @@ function ThreadUI(delegate)
         var y1=(y)*vmul;
         var x2=(x+0.5)*mul;
         var y2=(y)*vmul;
-        var p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
+        var desc = "M" + x1 + " " + y1 + " L" + x2 + " " + y2;
+        var p = this.path(desc);
         setPathAttrs(p);
         return p;
     };
@@ -196,7 +197,8 @@ function ThreadUI(delegate)
         var y1=(y)*vmul;
         var x2=(x)*mul;
         var y2=(y+0.5)*vmul;
-        var p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
+        var desc = "M" + x1 + " " + y1 + " L" + x2 + " " + y2;
+        var p = this.path(desc);
         setPathAttrs(p);
         return p;
     };
@@ -208,7 +210,8 @@ function ThreadUI(delegate)
         var y2=(y)*vmul;
         var x3=(x+0.5)*mul;
         var y3=(y)*vmul;
-        var p = this.path(sprintf("M%d %d L%d %d L%d %d", x1, y1, x2, y2, x3, y3));
+        var desc = "M" + x1 + " " + y1 + " L" + x2 + " " + y2 + " L" + x3 + " " + y3;
+        var p = this.path(desc);
         setPathAttrs(p);
         return p;
     };
@@ -218,7 +221,8 @@ function ThreadUI(delegate)
         var y1=(y-0.5)*vmul;
         var x2=(x)*mul;
         var y2=(y+0.5)*vmul;
-        var p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
+        var desc = "M" + x1 + " " + y1 + " L" + x2 + " " + y2;
+        var p = this.path(desc);
         setPathAttrs(p);
         return p;
     };
@@ -230,7 +234,8 @@ function ThreadUI(delegate)
         var y1=(y)*vmul;
         var x2=(x+0.5)*mul;
         var y2=(y)*vmul;
-        var p = this.path(sprintf("M%d %d L%d %d", x1, y1, x2, y2));
+        var desc = "M" + x1 + " " + y1 + " L" + x2 + " " + y2;
+        var p = this.path(desc);
         setPathAttrs(p);
         s.push(p);
         return s;
@@ -287,7 +292,7 @@ function ThreadUI(delegate)
             var cy = c.attr("cy");
             selection = paper.circle(cx, cy, mul*0.2);
             selection.attr("fill", "black");
-            $(selection.node).qtip(qtips[id]);
+            // $(selection.node).qtip(qtips[id]);
             $(selection.node).css("cursor", "pointer");
 
             // If the newly selected node is nearly out of view, scroll to encompass it
@@ -325,9 +330,12 @@ function ThreadUI(delegate)
         var circRad = mul*0.4;
         var newWidth = circX+circRad;
         var newHeight = circY+circRad;
-        var c = paper.circle(circX, circY, circRad);
+        var c;
+        var cNode;
         var id = post.id;
-        var postDate = new Date();
+        var i;
+        var count;
+
 
         if (paperWidth < newWidth || paperHeight < newHeight)
         {
@@ -336,15 +344,17 @@ function ThreadUI(delegate)
             paper.setSize(paperWidth, paperHeight);
         }
 
-        postDate.setISO8601(post.date);
+        c = paper.circle(circX, circY, circRad);
         circles[id] = c;
         c.attr("fill", "white");
+        cNode = $(c.node);
+        cNode.css("cursor", "pointer");
         $(c.node).click(function(e) {
             me.select(id, paper);
         });
         qtips[id] = {
             content: '<b>'+htmlSpecialChars(post.author)+'</b><br />'+
-                postDate.format(en_GB_datef),
+                post.date.format(en_GB_datef),
             show: 'mouseover',
             hide: 'mouseout',
             style: {
@@ -363,12 +373,9 @@ function ThreadUI(delegate)
                 adjust: { x: 16, y: 16 }
             }
         };
-        $(c.node).qtip(qtips[id]);
-        $(c.node).css("cursor", "pointer");
-        
-        var i=0;
-        var count=1;
+        cNode.qtip(qtips[id]);
 
+        i=0; count=1;
         _(post.children).each(function (child) {
             var last = (count==post.children.length);
             if (last && count==1) {
@@ -428,9 +435,6 @@ function ThreadUI(delegate)
             me.select(post.id, paper);
         });
 
-        var postDate = new Date();
-        postDate.setISO8601(post.date);
-
         if (null !== post.body)
         {
             try {
@@ -448,7 +452,7 @@ function ThreadUI(delegate)
                 'class': 'avatar user-'+author_id
             }));
         }
-        div.find('h3').before('<div class="date">'+ postDate.format(en_GB_datef)+'</div>');
+        div.find('h3').before('<div class="date">'+ post.date.format(en_GB_datef)+'</div>');
 
         var messageToolbar = $('<div />', {
             'class': 'message-toolbar'
@@ -845,6 +849,7 @@ function Converse()
 
     this.loadPost = function (post_id) {
         var modelCallback = function (data, textStatus, response) {
+            var tmpDate;
             if (data.users) {
                 view.addUsers(data.users);
             }
@@ -853,6 +858,9 @@ function Converse()
             }
             if (data.posts && data.posts.length > 0) {
                 _(data.posts).each(function(post) {
+                    tmpDate = new Date();
+                    tmpDate.setISO8601(post.date);
+                    post.date = tmpDate;
                     view.addPost(post);
                 });
                 view.redrawTree(post_id);
