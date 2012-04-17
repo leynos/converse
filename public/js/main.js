@@ -339,8 +339,8 @@ function ThreadUI(delegate)
 
         if (paperWidth < newWidth || paperHeight < newHeight)
         {
-            paperWidth = Math.max(paperWidth, newWidth) + mul;
-            paperHeight = Math.max(paperHeight, newHeight) + vmul;
+            paperWidth = Math.max(paperWidth, newWidth) + 20*mul;
+            paperHeight = Math.max(paperHeight, newHeight) + 20*vmul;
             paper.setSize(paperWidth, paperHeight);
         }
 
@@ -838,6 +838,9 @@ function BoardUI(delegate)
     this.destroy = function() { };
 }
 
+/**
+ * Constructor for an application controller object
+ */
 function Converse() 
 {
     var me = this;
@@ -955,6 +958,14 @@ function Converse()
     }
 }
 
+/**
+ * Returns a JQuery object encapsulating a toolbar button
+ *
+ * id - a css identifier
+ * image - path to the image to be used
+ * caption - text label to be displayed under the image
+ * onclick - callback function to be called when the button is clicked
+ */
 function toolbarButton(id, image, caption, onclick) 
 {
     var button = $('<div />', {
@@ -971,6 +982,9 @@ function toolbarButton(id, image, caption, onclick)
     return button;
 }
 
+/**
+ * Create the toolbar div and add the apprpriate buttons
+ */
 function loadToolbar(loginInfo) 
 {
     $('#toolbar div').remove();
@@ -989,6 +1003,9 @@ function loadToolbar(loginInfo)
 
 }
 
+/**
+ * Called by the browser on completion of a user add request
+ */
 function addUserCallback(req) 
 {
     if (req.status == 201) {
@@ -1002,6 +1019,9 @@ function addUserCallback(req)
     }
 }
 
+/**
+ * Show the user add dialogue
+ */
 function showAddUser() 
 {
     if ($('#user-dialog').length !== 0 ) {
@@ -1040,6 +1060,9 @@ function showAddUser()
     } );
 }
 
+/**
+ * Show the user edit dialogue
+ */
 function showEditUser() 
 {
     if ($('#edituser-dialog').length !== 0 ) { 
@@ -1070,6 +1093,9 @@ function showEditUser()
     } );
 }
 
+/**
+ * Called by the browser on completion of the log in request
+ */
 function loginCallback(data, statusText, req, error) 
 {
     if (req.status == 200) {
@@ -1085,6 +1111,9 @@ function loginCallback(data, statusText, req, error)
     }
 }
 
+/**
+ * Show the log in dialogue
+ */
 function showLogin() 
 {
     if ($('#login-dialog').length !== 0 ) {
@@ -1128,6 +1157,9 @@ function showLogin()
     } );
 }
 
+/**
+ * Show the log out confirmation dialogue
+ */
 function showConfirmLogout() 
 {
     $('<div id="logout-dialog">Are you sure you wish to log out?</div>').dialog( {
@@ -1160,13 +1192,19 @@ function test()
     window.alert('test');
 }
 
+/**
+ *  Perform initial setup of application
+ */
 $(window.document).ready( function() {
 
+    // mapping of functions to fragment routes
     var routes = {
         board: converse.viewBoard,
         thread: converse.viewThread,
         'default': converse.viewBoard
     };
+
+    // On change of url fragment, load the apprpriate route
     $(window).bind( 'hashchange', function(e) {
         var url = location.hash;
         url = url.replace(/^#!?/, '');
@@ -1179,6 +1217,9 @@ $(window.document).ready( function() {
         }
     });
 
+    // Ask the server if we are logged in, 
+    // load the appropriate toolbar
+    // evaluate the route for the current fragment
     $.get('loggedin', function(data) {
         loadToolbar(data);
         converse.didLogin(data);
