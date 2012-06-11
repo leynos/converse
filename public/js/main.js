@@ -321,11 +321,8 @@ function ThreadUI(delegate)
         selected_id = id;
     };
 
-    function drawTree(post, x, y) {
-        if (!x) { x=3; }
-        if (!y) { y=3; }
-
-        var circX = x*mul;
+    function drawPostCircle(post, x, y) {
+		var circX = x*mul;
         var circY = y*vmul;
         var circRad = mul*0.4;
         var newWidth = circX+circRad;
@@ -333,8 +330,6 @@ function ThreadUI(delegate)
         var c;
         var cNode;
         var id = post.id;
-        var i;
-        var count;
 
 
         if (paperWidth < newWidth || paperHeight < newHeight)
@@ -374,6 +369,18 @@ function ThreadUI(delegate)
             }
         };
         cNode.qtip(qtips[id]);
+    }
+
+    function drawTree(post, x, y) {
+
+		var count;
+        var i;
+		var dy;
+		
+        if (!x) { x=3; }
+        if (!y) { y=3; }
+        
+        drawPostCircle(post, x, y);
 
         i=0; count=1;
         _(post.children).each(function (child) {
