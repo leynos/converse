@@ -87,9 +87,9 @@ helpers do
         attr_accessor :params, :missing_params, :badsized_params
 
         def missing_param(p) missing_params.push p end
-        def missing_params?() missing_params.empty? end
+        def missing_params?() not missing_params.empty? end
         def badsized_param(p) badsized_params.push p end
-        def badsized_params?() badsized_params.empty? end
+        def badsized_params?() not badsized_params.empty? end
 
         def initialize(params, &block)
 
