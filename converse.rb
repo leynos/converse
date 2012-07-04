@@ -83,6 +83,8 @@ put '/user/:username' do
     201
 end
 
+# Get the avatar image for a given user
+# Optionally, this may be the small version
 get %r{/user/([^/]*)/avatar(/small)?} do |username, small|
 
     user = User.for_username username
@@ -145,13 +147,37 @@ post '/avatar' do
     user.save
 end
 
+# A simple idempotent setup route which will create a "main" board
+get '/setup' do
+    board = Board.for_name 'main'
+    halt 200 unless board.nil?
+    main = Board.new(
+        :name => 'main',
+        :title => 'General Discussion',
+        :description => 'It\'s all happening here',
+        :owners => [],
+        :status => :open,
+        :groups => [],
+        :private => false,
+        :moderated => false
+    )
+    main.save
+    redirect to('/board/main')
+end
+
 get '/board' do
     redirect '/board/main'
 end
 
 get '/board/:board_id' do
     board = Board.for_name params[:board_id]
-    board_not_found if board.nil?
+    if board.nil? then
+        if params[:board_id] = 'main' then
+            redirect to('/setup')
+        else
+            board_not_found 
+        end
+    end
 
     may_post = false
     if loggedin? then
