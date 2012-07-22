@@ -23,12 +23,15 @@ class Post < CouchRest::ExtendedDocument
     property :body
     property :board
 
+    #  CouchDB views consisting of a map and reduce function
     view_by  :author, :date,
+        # Retrieve a list of posts for a given author ordered by date and time
         :map => "function(doc) {
             if ((doc['couchrest-type'] == 'Post') && (doc['author'] != null) && (doc['date'] != null)) {
                 emit([doc['author'], doc['date']], null);
             }
         }",
+        # Calculate the number of posts by a given user (Group by level 1 for this)
         :reduce => "function(key, values, rereduce) {
             var sum = [0, ''];
             if (rereduce)
@@ -53,6 +56,9 @@ class Post < CouchRest::ExtendedDocument
         }"
 
     view_by  :thread,
+        # Retrieves the posts for a given thread, ordered by date
+        # This is used both for building thread maps and as an intermediate form
+        # for building board thread lists
         :map => "function(doc) {
             if (doc['couchrest-type'] == 'Post') 
             {
@@ -66,13 +72,13 @@ class Post < CouchRest::ExtendedDocument
                 }
             }
         }",
-        # Returns an array for each thread: 
-        #   [   date of most recent post, 
-        #       reply count, 
-        #       most recent author, 
-        #       originating author, 
-        #       starting date,
-        #       opening subject]
+        # Returns an array for each thread in a given board: 
+        # [ date of most recent post, 
+        #   reply count, 
+        #   most recent author, 
+        #   originating author, 
+        #   starting date,
+        #   opening subject ]
         :reduce => "function(key, values, rereduce) {
             var sum = ['', 0, null, null, null];
             if (rereduce)
@@ -145,6 +151,7 @@ class Post < CouchRest::ExtendedDocument
             });
             return result;
         }"
+
     view_by :ancestor,
         # Allows the selection of the n most 
         # recent posts for a given ancestor
