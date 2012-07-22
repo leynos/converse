@@ -35,6 +35,7 @@ class User < CouchRest::ExtendedDocument
 
     unique_id :id_string
 
+    # Used by CouchRest for naming new documents
     def id_string
         return "user_"+self.username
     end

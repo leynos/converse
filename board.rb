@@ -46,6 +46,7 @@ class Board < CouchRest::ExtendedDocument
 
     unique_id :id_string
 
+    # Used by CouchRest for naming new documents
     def id_string
         return "board_"+self.name
     end
