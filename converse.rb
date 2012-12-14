@@ -406,8 +406,8 @@ get '/loggedin' do
 end
 
 post '/login' do
-    username = params[:username] or ""
-    password = params[:password] or ""
+    username = params[:username] || ""
+    password = params[:password] || ""
     rememberme = yes_or_true? params[:rememberme]
 
     user = User.for_username username

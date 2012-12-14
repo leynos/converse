@@ -12,8 +12,11 @@ module Sinatra
             not_found msg end
         def loggedin?() session[:loggedin] end
         def username?(u) session[:username]==u end
-        def yes_or_true?(v) not v.nil? and
-            ((v.casecmp 'yes')==0 or (v.casecmp 'true')==0) end
+
+        def yes_or_true?(v) 
+            not v.nil? and ((v.casecmp 'yes')==0 or (v.casecmp 'true')==0) 
+        end
+
         def request_headers
             env.inject({}) do
                 |acc, (k,v)| acc[$1.downcase] = v if k =~ /^http_(.*)/i; acc
