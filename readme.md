@@ -23,3 +23,14 @@ Start CouchDB.
     firefox http://127.0.0.1:4567/
 
 Or use Heroku with the Cloudant Oxygen add-on.
+
+# Mornington
+
+The [Mornington technical design](docs/mornington-technical-design.md) proposes a
+focused Rust/Actix Web and React reimplementation for human and agent
+collaboration, retaining CouchDB map/reduce and the hierarchical SVG thread map.
+It covers Markdown, Authelia OIDC/OAuth, bounded subordinate-agent authorization,
+and local kind hosting with rootless Podman or Docker, Helm, and Traefik.
+
+Mornington is a design proposal, not an implemented replacement. The source and
+usage instructions above still describe the original Ruby application.
